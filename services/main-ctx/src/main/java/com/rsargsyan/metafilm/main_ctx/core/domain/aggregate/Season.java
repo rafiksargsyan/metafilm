@@ -1,5 +1,6 @@
 package com.rsargsyan.metafilm.main_ctx.core.domain.aggregate;
 
+import com.rsargsyan.metafilm.main_ctx.core.exception.InvalidSeasonException;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -22,25 +23,27 @@ public class Season extends AggregateRoot {
   private Integer seasonNumber;
 
   @Getter
-  private LocalDate airDate;
+  private String originalName; // nullable, e.g. "Murder House" for AHS
 
   @Getter
-  @Column(unique = true)
-  private Long tmdbId;
+  private LocalDate airDate;
 
   @SuppressWarnings("unused")
   Season() {}
 
-  public Season(TVShow tvShow, Integer seasonNumber, LocalDate airDate, Long tmdbId) {
+  public Season(TVShow tvShow, Integer seasonNumber, String originalName, LocalDate airDate) {
+    if (seasonNumber == null || seasonNumber < 1) {
+      throw new InvalidSeasonException("Season number must be a positive integer");
+    }
     this.tvShow = tvShow;
     this.seasonNumber = seasonNumber;
+    this.originalName = originalName;
     this.airDate = airDate;
-    this.tmdbId = tmdbId;
   }
 
-  public void update(LocalDate airDate, Long tmdbId) {
+  public void update(String originalName, LocalDate airDate) {
+    this.originalName = originalName;
     this.airDate = airDate;
-    this.tmdbId = tmdbId;
     touch();
   }
 }

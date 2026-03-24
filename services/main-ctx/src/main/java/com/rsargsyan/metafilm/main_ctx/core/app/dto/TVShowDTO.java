@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 public record TVShowDTO(String id, String originalTitle, Locale originalLanguage,
                         LocalDate firstAirDate, LocalDate lastAirDate,
-                        Long tmdbId, String imdbId, Long tvdbId) {
+                        Long tmdbId, String imdbId, Long tvdbId, boolean useTvdb) {
 
   public static TVShowDTO from(TVShow tvShow) {
     return new TVShowDTO(
@@ -18,7 +18,8 @@ public record TVShowDTO(String id, String originalTitle, Locale originalLanguage
         tvShow.getLastAirDate(),
         tvShow.getTmdbId(),
         tvShow.getImdbId(),
-        tvShow.getTvdbId()
+        tvShow.getTvdbId(),
+        tvShow.isUseTvdb()
     );
   }
 }

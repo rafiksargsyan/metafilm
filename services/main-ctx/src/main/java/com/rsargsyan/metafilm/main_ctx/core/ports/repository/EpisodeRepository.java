@@ -11,5 +11,4 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
   Optional<Episode> findByTvShowIdAndAbsoluteNumber(Long tvShowId, Integer absoluteNumber);
   List<Episode> findByTvShowIdAndSeasonNumber(Long tvShowId, Integer seasonNumber);
   List<Episode> findByTvShowId(Long tvShowId);
-  Optional<Episode> findByTmdbId(Long tmdbId);
 }

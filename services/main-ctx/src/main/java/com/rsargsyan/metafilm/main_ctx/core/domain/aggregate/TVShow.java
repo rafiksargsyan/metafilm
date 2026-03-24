@@ -37,6 +37,10 @@ public class TVShow extends AggregateRoot {
   @Column(unique = true)
   private Long tvdbId;
 
+  @Getter
+  @Column(nullable = false)
+  private boolean useTvdb = false;
+
   @SuppressWarnings("unused")
   TVShow() {}
 
@@ -49,6 +53,36 @@ public class TVShow extends AggregateRoot {
     this.tmdbId = tmdbId;
     this.imdbId = imdbId;
     this.tvdbId = tvdbId;
+  }
+
+  public void setTmdbId(Long tmdbId) {
+    this.tmdbId = tmdbId;
+    touch();
+  }
+
+  public void setTvdbId(Long tvdbId) {
+    this.tvdbId = tvdbId;
+    touch();
+  }
+
+  public void setUseTvdb(boolean useTvdb) {
+    this.useTvdb = useTvdb;
+    touch();
+  }
+
+  public void updateFromExternal(String originalTitle, LocalDate firstAirDate, LocalDate lastAirDate) {
+    this.originalTitle = originalTitle;
+    this.firstAirDate = firstAirDate;
+    this.lastAirDate = lastAirDate;
+    touch();
+  }
+
+  public void onSeasonCreated() {
+    touch();
+  }
+
+  public void onEpisodeCreated() {
+    touch();
   }
 
   public void update(String originalTitle, Locale originalLanguage, LocalDate firstAirDate,

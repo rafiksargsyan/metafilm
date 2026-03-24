@@ -4,6 +4,11 @@ import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
 import { Layout } from '../components/Layout/Layout';
 import { Login } from '../pages/Login';
 import { Dashboard } from '../pages/Dashboard';
+import { MoviesPage } from '../pages/MoviesPage';
+import { MovieDetailPage } from '../pages/MovieDetailPage';
+import { TVShowsPage } from '../pages/TVShowsPage';
+import { TVShowDetailPage } from '../pages/TVShowDetailPage';
+import { SeasonDetailPage } from '../pages/SeasonDetailPage';
 
 export default function App() {
   return (
@@ -20,6 +25,11 @@ export default function App() {
           >
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/movies" element={<MoviesPage />} />
+            <Route path="/movies/:id" element={<MovieDetailPage />} />
+            <Route path="/tvshows" element={<TVShowsPage />} />
+            <Route path="/tvshows/:id" element={<TVShowDetailPage />} />
+            <Route path="/tvshows/:id/seasons/:seasonId" element={<SeasonDetailPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

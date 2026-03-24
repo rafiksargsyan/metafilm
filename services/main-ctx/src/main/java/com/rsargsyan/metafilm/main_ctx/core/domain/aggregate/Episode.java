@@ -32,20 +32,11 @@ public class Episode extends AggregateRoot {
   @Getter
   private Integer runtime; // minutes
 
-  @Getter
-  @Column(unique = true)
-  private Long tmdbId;
-
-  @Getter
-  @Column(unique = true)
-  private String imdbId;
-
   @SuppressWarnings("unused")
   Episode() {}
 
   public Episode(TVShow tvShow, Integer seasonNumber, Integer episodeNumber,
-                 Integer absoluteNumber, LocalDate airDate, Integer runtime,
-                 Long tmdbId, String imdbId) {
+                 Integer absoluteNumber, LocalDate airDate, Integer runtime) {
     validate(seasonNumber, episodeNumber, absoluteNumber);
     this.tvShow = tvShow;
     this.seasonNumber = seasonNumber;
@@ -53,20 +44,16 @@ public class Episode extends AggregateRoot {
     this.absoluteNumber = absoluteNumber;
     this.airDate = airDate;
     this.runtime = runtime;
-    this.tmdbId = tmdbId;
-    this.imdbId = imdbId;
   }
 
   public void update(Integer seasonNumber, Integer episodeNumber, Integer absoluteNumber,
-                     LocalDate airDate, Integer runtime, Long tmdbId, String imdbId) {
+                     LocalDate airDate, Integer runtime) {
     validate(seasonNumber, episodeNumber, absoluteNumber);
     this.seasonNumber = seasonNumber;
     this.episodeNumber = episodeNumber;
     this.absoluteNumber = absoluteNumber;
     this.airDate = airDate;
     this.runtime = runtime;
-    this.tmdbId = tmdbId;
-    this.imdbId = imdbId;
     touch();
   }
 

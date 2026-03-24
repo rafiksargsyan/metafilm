@@ -59,10 +59,22 @@ public class MovieTranslation extends AggregateRoot {
   }
 
   public MovieImage addImage(ImageType type, String path,
-                             ExternalSource externalSource, String externalPath) {
-    var image = new MovieImage(this, type, path, externalSource, externalPath);
+                             ExternalSource externalSource, String externalPath, String blurhash) {
+    var image = new MovieImage(this, type, path, externalSource, externalPath, blurhash);
     images.add(image);
     touch();
     return image;
+  }
+
+  public void upsertImage(ImageType type, String path,
+                          ExternalSource externalSource, String externalPath, String blurhash) {
+    images.stream()
+        .filter(img -> img.getType() == type)
+        .findFirst()
+        .ifPresentOrElse(
+            img -> img.updatePath(path, externalSource, externalPath, blurhash),
+            () -> images.add(new MovieImage(this, type, path, externalSource, externalPath, blurhash))
+        );
+    touch();
   }
 }

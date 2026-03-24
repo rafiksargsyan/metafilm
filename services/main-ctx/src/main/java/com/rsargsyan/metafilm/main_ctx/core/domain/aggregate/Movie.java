@@ -45,6 +45,11 @@ public class Movie extends AggregateRoot {
     this.imdbId = imdbId;
   }
 
+  public void setTmdbId(Long tmdbId) {
+    this.tmdbId = tmdbId;
+    touch();
+  }
+
   public void update(String originalTitle, Locale originalLanguage, LocalDate releaseDate,
                      Integer runtime, Long tmdbId, String imdbId) {
     this.originalTitle = originalTitle;

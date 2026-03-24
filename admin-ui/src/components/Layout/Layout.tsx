@@ -18,6 +18,8 @@ import {
   useTheme,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import MovieIcon from '@mui/icons-material/Movie';
+import TvIcon from '@mui/icons-material/Tv';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -26,6 +28,8 @@ const DRAWER_WIDTH = 240;
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+  { label: 'Movies', icon: <MovieIcon />, path: '/movies' },
+  { label: 'TV Shows', icon: <TvIcon />, path: '/tvshows' },
 ];
 
 export function Layout() {
@@ -56,7 +60,7 @@ export function Layout() {
         {NAV_ITEMS.map(({ label, icon, path }) => (
           <ListItem key={label} disablePadding>
             <ListItemButton
-              selected={location.pathname === path}
+              selected={location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path))}
               onClick={() => {
                 navigate(path);
                 setMobileOpen(false);

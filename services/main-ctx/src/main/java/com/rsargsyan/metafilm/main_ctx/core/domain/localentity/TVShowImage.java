@@ -35,16 +35,28 @@ public class TVShowImage {
   @Getter
   private String externalPath;
 
+  @Getter
+  private String blurhash;
+
   @SuppressWarnings("unused")
   TVShowImage() {}
 
   public TVShowImage(TVShowTranslation translation, ImageType type, String path,
-                     ExternalSource externalSource, String externalPath) {
+                     ExternalSource externalSource, String externalPath, String blurhash) {
     if (path == null || path.isBlank()) throw new InvalidMovieImageException("path is required");
     this.translation = translation;
     this.type = type;
     this.path = path;
     this.externalSource = externalSource;
     this.externalPath = externalPath;
+    this.blurhash = blurhash;
+  }
+
+  public void updatePath(String path, ExternalSource externalSource, String externalPath, String blurhash) {
+    if (path == null || path.isBlank()) throw new InvalidMovieImageException("path is required");
+    this.path = path;
+    this.externalSource = externalSource;
+    this.externalPath = externalPath;
+    this.blurhash = blurhash;
   }
 }
