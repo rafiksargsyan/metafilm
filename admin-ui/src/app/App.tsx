@@ -4,6 +4,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute/ProtectedRoute';
 import { Layout } from '../components/Layout/Layout';
 import { Login } from '../pages/Login';
 import { Dashboard } from '../pages/Dashboard';
+import { EmailConfirmation } from '../components/EmailConfirmation/EmailConfirmation';
 import { MoviesPage } from '../pages/MoviesPage';
 import { MovieDetailPage } from '../pages/MovieDetailPage';
 import { TVShowsPage } from '../pages/TVShowsPage';
@@ -13,6 +14,7 @@ import { SeasonDetailPage } from '../pages/SeasonDetailPage';
 export default function App() {
   return (
     <AuthProvider>
+      <EmailConfirmation />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />

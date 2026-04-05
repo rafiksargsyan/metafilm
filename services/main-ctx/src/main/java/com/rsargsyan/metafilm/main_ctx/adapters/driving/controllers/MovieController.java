@@ -1,8 +1,10 @@
 package com.rsargsyan.metafilm.main_ctx.adapters.driving.controllers;
 
 import com.rsargsyan.metafilm.main_ctx.core.app.MovieService;
+import com.rsargsyan.metafilm.main_ctx.core.app.MovieSyncService;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.MovieCreationDTO;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.MovieDTO;
+import com.rsargsyan.metafilm.main_ctx.core.app.dto.MovieDetailDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,10 +18,12 @@ import org.springframework.web.bind.annotation.*;
 public class MovieController {
 
   private final MovieService movieService;
+  private final MovieSyncService movieSyncService;
 
   @Autowired
-  public MovieController(MovieService movieService) {
+  public MovieController(MovieService movieService, MovieSyncService movieSyncService) {
     this.movieService = movieService;
+    this.movieSyncService = movieSyncService;
   }
 
   @GetMapping
@@ -28,8 +32,8 @@ public class MovieController {
   }
 
   @GetMapping("/{movieId}")
-  public ResponseEntity<MovieDTO> getMovie(@PathVariable String movieId) {
-    return ResponseEntity.ok(movieService.getMovie(movieId));
+  public ResponseEntity<MovieDetailDTO> getMovie(@PathVariable String movieId) {
+    return ResponseEntity.ok(movieService.getMovieDetail(movieId));
   }
 
   @PostMapping
@@ -38,8 +42,15 @@ public class MovieController {
   }
 
   @PatchMapping("/{movieId}/tmdb-id")
-  public ResponseEntity<MovieDTO> setTmdbId(@PathVariable String movieId,
-                                            @RequestBody Long tmdbId) {
-    return ResponseEntity.ok(movieService.setTmdbId(movieId, tmdbId));
+  public ResponseEntity<MovieDetailDTO> setTmdbId(@PathVariable String movieId,
+                                                   @RequestBody Long tmdbId) {
+    movieService.setTmdbId(movieId, tmdbId);
+    return ResponseEntity.ok(movieService.getMovieDetail(movieId));
+  }
+
+  @PostMapping("/{movieId}/sync")
+  public ResponseEntity<Void> syncMovie(@PathVariable String movieId) {
+    movieSyncService.syncExternal(movieId);
+    return ResponseEntity.noContent().build();
   }
 }

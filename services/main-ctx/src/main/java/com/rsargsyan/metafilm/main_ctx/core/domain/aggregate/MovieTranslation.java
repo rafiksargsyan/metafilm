@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -56,6 +57,10 @@ public class MovieTranslation extends AggregateRoot {
     this.overview = overview;
     this.tagline = tagline;
     touch();
+  }
+
+  public List<MovieImage> getImages() {
+    return Collections.unmodifiableList(images);
   }
 
   public MovieImage addImage(ImageType type, String path,

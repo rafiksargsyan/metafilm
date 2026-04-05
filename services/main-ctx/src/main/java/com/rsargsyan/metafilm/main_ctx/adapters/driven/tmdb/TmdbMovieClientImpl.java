@@ -20,41 +20,50 @@ import static com.rsargsyan.metafilm.main_ctx.adapters.driven.tmdb.TmdbLocaleRes
 public class TmdbMovieClientImpl implements TmdbMovieClient {
 
   private final RestClient restClient;
+  private final String apiKey;
 
   public TmdbMovieClientImpl(
       @Value("${tmdb.base-url}") String baseUrl,
       @Value("${tmdb.api-key}") String apiKey) {
+    this.apiKey = apiKey;
     this.restClient = RestClient.builder()
         .baseUrl(baseUrl)
-        .defaultHeader("Authorization", "Bearer " + apiKey)
         .build();
   }
 
   @Override
   public TmdbMovieData fetchMovie(Long tmdbId) {
     MovieResponse response = restClient.get()
-        .uri("/movie/{id}?append_to_response=translations,images", tmdbId)
+        .uri("/movie/{id}?append_to_response=translations,images&api_key={key}", tmdbId, apiKey)
         .retrieve()
         .body(MovieResponse.class);
 
+    Optional<Locale> originalLocale = resolveFromLanguageAndCountries(
+        response.originalLanguage(),
+        response.productionCountries() != null
+            ? response.productionCountries().stream().map(ProductionCountry::countryCode).toList()
+            : List.of());
+
+    List<ImageEntry> posters = response.images() != null ? response.images().posters() : List.of();
+    List<ImageEntry> backdrops = response.images() != null ? response.images().backdrops() : List.of();
+
     return new TmdbMovieData(
         response.originalTitle(),
-        resolveFromLanguageAndCountries(
-            response.originalLanguage(),
-            response.productionCountries() != null
-                ? response.productionCountries().stream().map(ProductionCountry::countryCode).toList()
-                : List.of()),
+        response.overview(),
+        response.tagline(),
+        bestImage(posters, null),
+        bestImage(backdrops, null),
+        response.imdbId(),
+        originalLocale,
         parseDate(response.releaseDate()),
         response.runtime(),
-        mapTranslations(response)
+        mapTranslations(response, posters, backdrops)
     );
   }
 
-  private List<TmdbTranslationData> mapTranslations(MovieResponse response) {
-    List<ImageEntry> posters = response.images() != null ? response.images().posters() : List.of();
-    List<ImageEntry> backdrops = response.images() != null ? response.images().backdrops() : List.of();
-    String neutralBackdropPath = bestImage(backdrops, null);
-
+  private List<TmdbTranslationData> mapTranslations(MovieResponse response,
+                                                     List<ImageEntry> posters,
+                                                     List<ImageEntry> backdrops) {
     List<TranslationEntry> raw = response.translations() != null
         ? response.translations().translations() : List.of();
 
@@ -66,7 +75,7 @@ public class TmdbMovieClientImpl implements TmdbMovieClient {
                 t.data() != null ? t.data().overview() : null,
                 t.data() != null ? t.data().tagline() : null,
                 bestImage(posters, t.languageCode()),
-                Optional.ofNullable(bestImage(backdrops, t.languageCode())).orElse(neutralBackdropPath)
+                bestImage(backdrops, t.languageCode())
             )))
         .filter(Optional::isPresent)
         .map(Optional::get)
@@ -90,6 +99,9 @@ public class TmdbMovieClientImpl implements TmdbMovieClient {
       @JsonProperty("original_language") String originalLanguage,
       @JsonProperty("release_date") String releaseDate,
       @JsonProperty("runtime") Integer runtime,
+      @JsonProperty("overview") String overview,
+      @JsonProperty("tagline") String tagline,
+      @JsonProperty("imdb_id") String imdbId,
       @JsonProperty("production_countries") List<ProductionCountry> productionCountries,
       @JsonProperty("translations") TranslationsWrapper translations,
       @JsonProperty("images") ImagesWrapper images

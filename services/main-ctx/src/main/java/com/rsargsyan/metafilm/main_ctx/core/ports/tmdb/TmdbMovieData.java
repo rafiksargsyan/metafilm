@@ -8,6 +8,11 @@ import java.util.Optional;
 
 public record TmdbMovieData(
     String originalTitle,
+    String originalOverview,
+    String originalTagline,
+    String originalPosterPath,
+    String originalBackdropPath,
+    String imdbId,
     Optional<Locale> originalLanguage,
     LocalDate releaseDate,
     Integer runtime,

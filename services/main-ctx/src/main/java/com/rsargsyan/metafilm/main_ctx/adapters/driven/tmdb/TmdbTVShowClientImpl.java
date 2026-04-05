@@ -19,20 +19,21 @@ import static com.rsargsyan.metafilm.main_ctx.adapters.driven.tmdb.TmdbLocaleRes
 public class TmdbTVShowClientImpl implements TmdbTVShowClient {
 
   private final RestClient restClient;
+  private final String apiKey;
 
   public TmdbTVShowClientImpl(
       @Value("${tmdb.base-url}") String baseUrl,
       @Value("${tmdb.api-key}") String apiKey) {
+    this.apiKey = apiKey;
     this.restClient = RestClient.builder()
         .baseUrl(baseUrl)
-        .defaultHeader("Authorization", "Bearer " + apiKey)
         .build();
   }
 
   @Override
   public ExternalTVShowData fetchTVShow(Long tmdbId) {
     TVShowResponse response = restClient.get()
-        .uri("/tv/{id}?append_to_response=translations,images", tmdbId)
+        .uri("/tv/{id}?append_to_response=translations,images&api_key={key}", tmdbId, apiKey)
         .retrieve()
         .body(TVShowResponse.class);
 
@@ -40,7 +41,10 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
         response.originalLanguage(),
         response.originCountry() != null ? response.originCountry() : List.of());
 
-    List<ExternalTranslationData> translations = mapShowTranslations(response, originalLocale);
+    List<ImageEntry> posters = response.images() != null ? response.images().posters() : List.of();
+    List<ImageEntry> backdrops = response.images() != null ? response.images().backdrops() : List.of();
+
+    List<ExternalTranslationData> translations = mapShowTranslations(response, posters, backdrops);
 
     List<ExternalSeasonData> seasons = response.seasons() != null
         ? response.seasons().stream()
@@ -51,6 +55,11 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
 
     return new ExternalTVShowData(
         response.originalName(),
+        response.overview(),
+        response.tagline(),
+        bestImage(posters, null),
+        bestImage(backdrops, null),
+        originalLocale,
         parseDate(response.firstAirDate()),
         parseDate(response.lastAirDate()),
         translations,
@@ -61,13 +70,12 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
   private ExternalSeasonData fetchSeason(Long tmdbId, Integer seasonNumber,
                                          Optional<Locale> originalLocale) {
     SeasonResponse season = restClient.get()
-        .uri("/tv/{id}/season/{seasonNumber}?append_to_response=translations,images",
-            tmdbId, seasonNumber)
+        .uri("/tv/{id}/season/{seasonNumber}?append_to_response=translations,images&api_key={key}",
+            tmdbId, seasonNumber, apiKey)
         .retrieve()
         .body(SeasonResponse.class);
 
     List<ImageEntry> posters = season.images() != null ? season.images().posters() : List.of();
-    String neutralPosterPath = bestImage(posters, null);
 
     List<ExternalTranslationData> translations = season.translations() != null
         ? season.translations().translations().stream()
@@ -77,7 +85,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
                     t.data() != null ? t.data().name() : null,
                     t.data() != null ? t.data().overview() : null,
                     null,
-                    Optional.ofNullable(bestImage(posters, t.languageCode())).orElse(neutralPosterPath),
+                    bestImage(posters, t.languageCode()),
                     null
                 )))
             .filter(Optional::isPresent)
@@ -102,7 +110,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
 
   private ExternalEpisodeData mapEpisode(EpisodeEntry e, Optional<Locale> originalLocale) {
     List<ExternalTranslationData> translations = originalLocale
-        .filter(_ -> e.name() != null || e.overview() != null)
+        .filter(locale -> e.name() != null || e.overview() != null)
         .map(locale -> List.of(new ExternalTranslationData(
             locale, e.name(), e.overview(), null, null, null)))
         .orElse(List.of());
@@ -119,11 +127,8 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
   }
 
   private List<ExternalTranslationData> mapShowTranslations(TVShowResponse response,
-                                                             Optional<Locale> originalLocale) {
-    List<ImageEntry> posters = response.images() != null ? response.images().posters() : List.of();
-    List<ImageEntry> backdrops = response.images() != null ? response.images().backdrops() : List.of();
-    String neutralBackdropPath = bestImage(backdrops, null);
-
+                                                             List<ImageEntry> posters,
+                                                             List<ImageEntry> backdrops) {
     List<TranslationEntry> raw = response.translations() != null
         ? response.translations().translations() : List.of();
 
@@ -135,7 +140,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
                 t.data() != null ? t.data().overview() : null,
                 t.data() != null ? t.data().tagline() : null,
                 bestImage(posters, t.languageCode()),
-                Optional.ofNullable(bestImage(backdrops, t.languageCode())).orElse(neutralBackdropPath)
+                bestImage(backdrops, t.languageCode())
             )))
         .filter(Optional::isPresent)
         .map(Optional::get)
@@ -159,6 +164,8 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
       @JsonProperty("original_language") String originalLanguage,
       @JsonProperty("first_air_date") String firstAirDate,
       @JsonProperty("last_air_date") String lastAirDate,
+      @JsonProperty("overview") String overview,
+      @JsonProperty("tagline") String tagline,
       @JsonProperty("origin_country") List<String> originCountry,
       @JsonProperty("seasons") List<SeasonEntry> seasons,
       @JsonProperty("translations") TranslationsWrapper translations,

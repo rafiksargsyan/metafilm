@@ -4,6 +4,7 @@ import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.Locale;
 import jakarta.persistence.*;
 import lombok.Getter;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
@@ -32,6 +33,13 @@ public class Movie extends AggregateRoot {
   @Column(unique = true)
   private String imdbId;
 
+  @Getter
+  @Column(nullable = false, columnDefinition = "boolean not null default false")
+  private boolean syncInProgress;
+
+  @Getter
+  private Instant syncStartedAt;
+
   @SuppressWarnings("unused")
   Movie() {}
 
@@ -47,6 +55,17 @@ public class Movie extends AggregateRoot {
 
   public void setTmdbId(Long tmdbId) {
     this.tmdbId = tmdbId;
+    touch();
+  }
+
+  public void markSyncStarted() {
+    this.syncInProgress = true;
+    this.syncStartedAt = Instant.now();
+    touch();
+  }
+
+  public void markSyncFinished() {
+    this.syncInProgress = false;
     touch();
   }
 

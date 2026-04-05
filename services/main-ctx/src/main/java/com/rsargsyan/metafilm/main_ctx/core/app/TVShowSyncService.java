@@ -6,6 +6,7 @@ import com.rsargsyan.metafilm.main_ctx.core.Util;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.TVShow;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ExternalSource;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ImageType;
+import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.Locale;
 import com.rsargsyan.metafilm.main_ctx.core.exception.ResourceNotFoundException;
 import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalEpisodeData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalSeasonData;
@@ -114,25 +115,26 @@ public class TVShowSyncService {
 
     for (ExternalTranslationData t : data.translations()) {
       try {
-        tvShowService.upsertTranslation(tvShowIdStr, t.locale(), t.title(), t.overview(), t.tagline());
-        if (t.posterPath() != null) {
-          UploadResult r = uploadImage(
-              "tvshows/%s/%s/poster".formatted(tvShowIdStr, t.locale().name().toLowerCase()),
-              t.posterPath());
-          if (r != null) {
-            tvShowService.upsertTranslationImage(tvShowIdStr, t.locale(), ImageType.POSTER, r.s3Key(), externalSource, t.posterPath(), r.blurhash());
-          }
-        }
-        if (t.backdropPath() != null) {
-          UploadResult r = uploadImage(
-              "tvshows/%s/%s/backdrop".formatted(tvShowIdStr, t.locale().name().toLowerCase()),
-              t.backdropPath());
-          if (r != null) {
-            tvShowService.upsertTranslationImage(tvShowIdStr, t.locale(), ImageType.BACKDROP, r.s3Key(), externalSource, t.backdropPath(), r.blurhash());
-          }
-        }
+        syncTVShowTranslation(tvShowIdStr, t, externalSource);
       } catch (Exception e) {
         log.error("Failed to sync translation {} for tvShow {}", t.locale(), tvShowIdStr, e);
+      }
+    }
+
+    Locale tvShowLocale = tvShow.getOriginalLanguage();
+    boolean covered = data.translations().stream().anyMatch(t -> t.locale().equals(tvShowLocale));
+    if (!covered) {
+      try {
+        syncTVShowTranslation(tvShowIdStr, new ExternalTranslationData(
+            tvShowLocale,
+            data.originalTitle(),
+            data.originalOverview(),
+            data.originalTagline(),
+            data.originalPosterPath(),
+            data.originalBackdropPath()
+        ), externalSource);
+      } catch (Exception e) {
+        log.error("Failed to sync original-locale translation {} for tvShow {}", tvShowLocale, tvShowIdStr, e);
       }
     }
 
@@ -141,6 +143,27 @@ public class TVShowSyncService {
         syncSeason(tvShowIdStr, season, externalSource);
       } catch (Exception e) {
         log.error("Failed to sync season {} for tvShow {}", season.seasonNumber(), tvShowIdStr, e);
+      }
+    }
+  }
+
+  private void syncTVShowTranslation(String tvShowIdStr, ExternalTranslationData t,
+                                      ExternalSource externalSource) {
+    tvShowService.upsertTranslation(tvShowIdStr, t.locale(), t.title(), t.overview(), t.tagline());
+    if (t.posterPath() != null) {
+      UploadResult r = uploadImage(
+          "tvshows/%s/%s/poster".formatted(tvShowIdStr, t.locale().name().toLowerCase()),
+          t.posterPath());
+      if (r != null) {
+        tvShowService.upsertTranslationImage(tvShowIdStr, t.locale(), ImageType.POSTER, r.s3Key(), externalSource, t.posterPath(), r.blurhash());
+      }
+    }
+    if (t.backdropPath() != null) {
+      UploadResult r = uploadImage(
+          "tvshows/%s/%s/backdrop".formatted(tvShowIdStr, t.locale().name().toLowerCase()),
+          t.backdropPath());
+      if (r != null) {
+        tvShowService.upsertTranslationImage(tvShowIdStr, t.locale(), ImageType.BACKDROP, r.s3Key(), externalSource, t.backdropPath(), r.blurhash());
       }
     }
   }

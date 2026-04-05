@@ -16,6 +16,28 @@ export interface Movie {
   imdbId: string | null;
 }
 
+export interface MovieImage {
+  type: 'POSTER' | 'BACKDROP';
+  url: string | null;
+  blurhash: string | null;
+  externalSource: string | null;
+  externalPath: string | null;
+}
+
+export interface MovieTranslation {
+  id: string;
+  locale: string;
+  title: string | null;
+  overview: string | null;
+  tagline: string | null;
+  images: MovieImage[];
+}
+
+export interface MovieDetail extends Movie {
+  syncInProgress: boolean;
+  translations: MovieTranslation[];
+}
+
 export interface TVShow {
   id: string;
   originalTitle: string;
@@ -52,11 +74,12 @@ export interface SeasonDetail extends Season {
 
 export const LOCALES: { value: string; label: string }[] = [
   { value: 'EN_US', label: 'English (US)' },
-  { value: 'EN_GB', label: 'English (UK)' },
+  { value: 'EN_GB', label: 'English (GB)' },
   { value: 'EN_AU', label: 'English (AU)' },
   { value: 'FR_FR', label: 'French' },
   { value: 'DE_DE', label: 'German' },
   { value: 'ES_ES', label: 'Spanish (Spain)' },
+  { value: 'ES_MX', label: 'Spanish (Mexico)' },
   { value: 'IT_IT', label: 'Italian' },
   { value: 'PT_PT', label: 'Portuguese (Portugal)' },
   { value: 'PT_BR', label: 'Portuguese (Brazil)' },

@@ -23,6 +23,8 @@ export async function apiRequest<T>(
     throw new Error(body?.message ?? `Request failed: ${response.status}`);
   }
 
-  if (response.status === 204) return undefined as T;
+  const contentLength = response.headers.get('content-length');
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json') || contentLength === '0') return undefined as T;
   return response.json() as Promise<T>;
 }
