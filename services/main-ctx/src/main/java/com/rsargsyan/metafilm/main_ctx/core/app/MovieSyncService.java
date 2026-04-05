@@ -141,18 +141,18 @@ public class MovieSyncService {
         .orElseGet(() -> new MovieTranslation(movie, t.locale(), null, null, null));
 
     translation.update(t.title(), t.overview(), t.tagline());
-    movieTranslationRepository.save(translation);
+    translation = movieTranslationRepository.save(translation);
 
     if (t.posterPath() != null) {
-      syncImage(movie, translation, ImageType.POSTER, t.posterPath());
+      translation = syncImage(movie, translation, ImageType.POSTER, t.posterPath());
     }
     if (t.backdropPath() != null) {
       syncImage(movie, translation, ImageType.BACKDROP, t.backdropPath());
     }
   }
 
-  private void syncImage(Movie movie, MovieTranslation translation,
-                         ImageType imageType, String tmdbPath) {
+  private MovieTranslation syncImage(Movie movie, MovieTranslation translation,
+                                     ImageType imageType, String tmdbPath) {
     byte[] imageBytes;
     try {
       imageBytes = imageDownloadClient.get()
@@ -161,7 +161,7 @@ public class MovieSyncService {
           .body(byte[].class);
     } catch (Exception e) {
       log.error("Failed to download {} image {} for movie {}", imageType, tmdbPath, movie.getId(), e);
-      return;
+      return translation;
     }
 
     String extension = tmdbPath.contains(".") ? tmdbPath.substring(tmdbPath.lastIndexOf('.')) : ".jpg";
@@ -179,6 +179,6 @@ public class MovieSyncService {
 
     String blurhash = BlurhashUtil.compute(imageBytes);
     translation.upsertImage(imageType, s3Key, ExternalSource.TMDB, tmdbPath, blurhash);
-    movieTranslationRepository.save(translation);
+    return movieTranslationRepository.save(translation);
   }
 }
