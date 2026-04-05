@@ -2,8 +2,12 @@ package com.rsargsyan.metafilm.main_ctx.core.domain.aggregate;
 
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.FullName;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.NameConverter;
+import com.rsargsyan.metafilm.main_ctx.core.exception.ApiKeyLimitReachedException;
 import jakarta.persistence.*;
 import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "user_profile")
@@ -18,6 +22,9 @@ public class UserProfile extends AccountScopedAggregateRoot {
   @Convert(converter = NameConverter.class)
   private FullName fullName;
 
+  @OneToMany(mappedBy = "userProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<ApiKey> apiKeys = new ArrayList<>();
+
   @SuppressWarnings("unused")
   public UserProfile() {}
 
@@ -25,5 +32,20 @@ public class UserProfile extends AccountScopedAggregateRoot {
     super(account);
     this.principal = principal;
     this.fullName = new FullName(name);
+  }
+
+  public String createApiKey(String description) {
+    if (apiKeys.size() >= 2) throw new ApiKeyLimitReachedException();
+    ApiKey apiKey = new ApiKey(this, description);
+    apiKeys.add(apiKey);
+    touch();
+    return apiKey.getKey();
+  }
+
+  public ApiKey getApiKeyByKey(String key) {
+    for (ApiKey apiKey : apiKeys) {
+      if (apiKey.check(key)) return apiKey;
+    }
+    return null;
   }
 }

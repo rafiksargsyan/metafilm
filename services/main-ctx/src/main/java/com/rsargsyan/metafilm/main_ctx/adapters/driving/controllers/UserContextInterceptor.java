@@ -35,6 +35,9 @@ public class UserContextInterceptor implements HandlerInterceptor {
           .fullName(fullName)
           .userProfileId(userProfileId)
           .build());
+    } else if (auth instanceof CustomApiKey customApiKey) {
+      UserContext userContext = authService.getUserContextByApiKey(customApiKey.getApiKeyId());
+      UserContextHolder.set(userContext);
     }
     return true;
   }

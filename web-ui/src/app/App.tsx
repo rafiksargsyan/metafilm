@@ -5,6 +5,10 @@ import { EmailConfirmation } from '../components/EmailConfirmation/EmailConfirma
 import { Layout } from '../components/Layout/Layout';
 import { Login } from '../pages/Login';
 import { Dashboard } from '../pages/Dashboard';
+import { Movies } from '../pages/Movies';
+import { MovieDetailPage } from '../pages/MovieDetailPage';
+import { TVShows } from '../pages/TVShows';
+import { ApiKeys } from '../pages/ApiKeys';
 
 export default function App() {
   return (
@@ -22,6 +26,10 @@ export default function App() {
           >
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/movies" element={<Movies />} />
+            <Route path="/movies/:id" element={<MovieDetailPage />} />
+            <Route path="/tvshows" element={<TVShows />} />
+            <Route path="/api-keys" element={<ApiKeys />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
