@@ -49,7 +49,7 @@ export function MoviesPage() {
     listMovies(user, page, rowsPerPage)
       .then((p) => {
         setMovies(p.content);
-        setTotalElements(p.totalElements);
+        setTotalElements(p.page.totalElements);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -71,7 +71,7 @@ export function MoviesPage() {
       // reload
       const p = await listMovies(user, 0, rowsPerPage);
       setMovies(p.content);
-      setTotalElements(p.totalElements);
+      setTotalElements(p.page.totalElements);
     } catch (e: unknown) {
       setFormError(e instanceof Error ? e.message : 'Failed to create movie');
     } finally {

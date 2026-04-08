@@ -118,7 +118,8 @@ public class MovieSyncService {
     // TMDB's production_countries may not reliably resolve to the locale the admin has set
     // (e.g. EN_GB vs EN_US for a British film).
     Locale movieLocale = movie.getOriginalLanguage();
-    boolean covered = data.translations().stream().anyMatch(t -> t.locale().equals(movieLocale));
+    boolean covered = data.translations().stream()
+        .anyMatch(t -> t.locale().equals(movieLocale) && t.title() != null && !t.title().isBlank());
     if (!covered) {
       try {
         syncTranslation(movie, new TmdbTranslationData(

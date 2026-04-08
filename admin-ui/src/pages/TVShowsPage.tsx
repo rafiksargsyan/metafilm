@@ -49,7 +49,7 @@ export function TVShowsPage() {
     listTVShows(user, page, rowsPerPage)
       .then((p) => {
         setTVShows(p.content);
-        setTotalElements(p.totalElements);
+        setTotalElements(p.page.totalElements);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -70,7 +70,7 @@ export function TVShowsPage() {
       setPage(0);
       const p = await listTVShows(user, 0, rowsPerPage);
       setTVShows(p.content);
-      setTotalElements(p.totalElements);
+      setTotalElements(p.page.totalElements);
     } catch (e: unknown) {
       setFormError(e instanceof Error ? e.message : 'Failed to create TV show');
     } finally {
