@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+
+cat > /usr/share/nginx/html/env.js << EOF
+Object.defineProperty(window, '__METAFILM_ENV__', {
+  value: {
+    VITE_API_BASE_URL: '${VITE_API_BASE_URL}',
+    VITE_FIREBASE_API_KEY: '${VITE_FIREBASE_API_KEY}',
+    VITE_FIREBASE_AUTH_DOMAIN: '${VITE_FIREBASE_AUTH_DOMAIN}',
+    VITE_FIREBASE_PROJECT_ID: '${VITE_FIREBASE_PROJECT_ID}',
+    VITE_FIREBASE_STORAGE_BUCKET: '${VITE_FIREBASE_STORAGE_BUCKET}',
+    VITE_FIREBASE_MESSAGING_SENDER_ID: '${VITE_FIREBASE_MESSAGING_SENDER_ID}',
+    VITE_FIREBASE_APP_ID: '${VITE_FIREBASE_APP_ID}',
+  },
+  writable: false,
+});
+EOF
+
+exec nginx -g 'daemon off;'

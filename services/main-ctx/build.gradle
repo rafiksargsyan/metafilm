@@ -40,3 +40,19 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+def imageName = "rsargsyan/metafilm-backend"
+
+tasks.register('dockerBuild', Exec) {
+	dependsOn 'bootJar'
+	commandLine 'sh', '-c', "docker build -t ${imageName}:latest ."
+}
+
+tasks.register('dockerPush', Exec) {
+	dependsOn 'dockerBuild'
+	commandLine 'sh', '-c', "docker push ${imageName}:latest"
+}
+
+tasks.register('dockerPublish') {
+	dependsOn 'dockerPush'
+}

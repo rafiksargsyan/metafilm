@@ -7,6 +7,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
@@ -36,6 +37,7 @@ public class Config {
         .region(Region.of(s3Region))
         .credentialsProvider(StaticCredentialsProvider.create(
             AwsBasicCredentials.create(s3AccessKeyId, s3SecretAccessKey)))
+        .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
         .build();
   }
 
@@ -46,6 +48,7 @@ public class Config {
         .region(Region.of(s3Region))
         .credentialsProvider(StaticCredentialsProvider.create(
             AwsBasicCredentials.create(s3AccessKeyId, s3SecretAccessKey)))
+        .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
         .build();
   }
 }
