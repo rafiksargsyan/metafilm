@@ -111,7 +111,6 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
 
   private ExternalEpisodeData mapEpisode(EpisodeEntry e, Optional<Locale> originalLocale) {
     List<ExternalTranslationData> translations = originalLocale
-        .filter(locale -> e.name() != null || e.overview() != null)
         .map(locale -> List.of(new ExternalTranslationData(
             locale, e.name(), e.overview(), null, null, null)))
         .orElse(List.of());
@@ -136,9 +135,9 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
         .retrieve()
         .body(EpisodeTranslationsResponse.class);
 
-    if (response == null || response.results() == null) return List.of();
+    if (response == null || response.translations() == null) return List.of();
 
-    return response.results().stream()
+    return response.translations().stream()
         .map(t -> resolveLocale(t.languageCode(), t.countryCode()).map(locale ->
             new ExternalTranslationData(
                 locale,
@@ -232,7 +231,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   record EpisodeTranslationsResponse(
-      @JsonProperty("results") List<TranslationEntry> results
+      @JsonProperty("translations") List<TranslationEntry> translations
   ) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)

@@ -1,7 +1,9 @@
 package com.rsargsyan.metafilm.main_ctx.adapters.driving.controllers;
 
+import com.rsargsyan.metafilm.main_ctx.core.app.EpisodeService;
 import com.rsargsyan.metafilm.main_ctx.core.app.SeasonService;
 import com.rsargsyan.metafilm.main_ctx.core.app.TVShowService;
+import com.rsargsyan.metafilm.main_ctx.core.app.dto.EpisodeDetailDTO;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.SeasonDTO;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.SeasonDetailDTO;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.TVShowDetailDTO;
@@ -20,11 +22,14 @@ public class PublicTVShowController {
 
   private final TVShowService tvShowService;
   private final SeasonService seasonService;
+  private final EpisodeService episodeService;
 
   @Autowired
-  public PublicTVShowController(TVShowService tvShowService, SeasonService seasonService) {
+  public PublicTVShowController(TVShowService tvShowService, SeasonService seasonService,
+                                 EpisodeService episodeService) {
     this.tvShowService = tvShowService;
     this.seasonService = seasonService;
+    this.episodeService = episodeService;
   }
 
   @GetMapping
@@ -47,5 +52,11 @@ public class PublicTVShowController {
   public ResponseEntity<SeasonDetailDTO> getSeason(@PathVariable String tvShowId,
                                                     @PathVariable String seasonId) {
     return ResponseEntity.ok(seasonService.getSeason(tvShowId, seasonId));
+  }
+
+  @GetMapping("/{tvShowId}/episode/{episodeId}")
+  public ResponseEntity<EpisodeDetailDTO> getEpisode(@PathVariable String tvShowId,
+                                                      @PathVariable String episodeId) {
+    return ResponseEntity.ok(episodeService.getEpisodeDetail(tvShowId, episodeId));
   }
 }
