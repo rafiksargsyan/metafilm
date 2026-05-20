@@ -8,16 +8,19 @@ import java.util.List;
 
 public record SeasonDetailDTO(String id, String tvShowId, Integer seasonNumber,
                                String originalName, LocalDate airDate,
-                               List<EpisodeDTO> episodes) {
+                               List<EpisodeDTO> episodes,
+                               List<SeasonTranslationDTO> translations) {
 
-  public static SeasonDetailDTO from(Season season, List<Episode> episodes) {
+  public static SeasonDetailDTO from(Season season, List<Episode> episodes,
+                                     List<SeasonTranslationDTO> translations) {
     return new SeasonDetailDTO(
         season.getStrId(),
         season.getTvShow().getStrId(),
         season.getSeasonNumber(),
         season.getOriginalName(),
         season.getAirDate(),
-        episodes.stream().map(EpisodeDTO::from).toList()
+        episodes.stream().map(EpisodeDTO::from).toList(),
+        translations
     );
   }
 }

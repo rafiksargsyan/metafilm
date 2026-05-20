@@ -43,6 +43,7 @@ public class EpisodeImage {
 
   public EpisodeImage(EpisodeTranslation translation, ImageType type, String path,
                       ExternalSource externalSource, String externalPath, String blurhash) {
+    if (type != ImageType.STILL) throw new InvalidMovieImageException("episodes only support STILL");
     if (path == null || path.isBlank()) throw new InvalidMovieImageException("path is required");
     this.translation = translation;
     this.type = type;

@@ -10,6 +10,7 @@ import { MovieDetailPage } from '../pages/MovieDetailPage';
 import { TVShowsPage } from '../pages/TVShowsPage';
 import { TVShowDetailPage } from '../pages/TVShowDetailPage';
 import { SeasonDetailPage } from '../pages/SeasonDetailPage';
+import { EpisodeDetailPage } from '../pages/EpisodeDetailPage';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/tvshows" element={<TVShowsPage />} />
             <Route path="/tvshows/:id" element={<TVShowDetailPage />} />
             <Route path="/tvshows/:id/seasons/:seasonId" element={<SeasonDetailPage />} />
+            <Route path="/tvshows/:id/seasons/:seasonId/episodes/:episodeId" element={<EpisodeDetailPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

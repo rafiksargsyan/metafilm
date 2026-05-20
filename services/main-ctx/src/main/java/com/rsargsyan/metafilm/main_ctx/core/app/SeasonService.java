@@ -1,9 +1,8 @@
 package com.rsargsyan.metafilm.main_ctx.core.app;
 
+import com.rsargsyan.metafilm.main_ctx.Config;
 import com.rsargsyan.metafilm.main_ctx.core.Util;
-import com.rsargsyan.metafilm.main_ctx.core.app.dto.SeasonCreationDTO;
-import com.rsargsyan.metafilm.main_ctx.core.app.dto.SeasonDTO;
-import com.rsargsyan.metafilm.main_ctx.core.app.dto.SeasonDetailDTO;
+import com.rsargsyan.metafilm.main_ctx.core.app.dto.*;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.Season;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.SeasonTranslation;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.TVShow;
@@ -17,12 +16,19 @@ import com.rsargsyan.metafilm.main_ctx.core.ports.repository.SeasonRepository;
 import com.rsargsyan.metafilm.main_ctx.core.ports.repository.SeasonTranslationRepository;
 import com.rsargsyan.metafilm.main_ctx.core.ports.repository.TVShowRepository;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
+@Slf4j
 @Service
 public class SeasonService {
 
@@ -30,16 +36,22 @@ public class SeasonService {
   private final SeasonTranslationRepository seasonTranslationRepository;
   private final TVShowRepository tvShowRepository;
   private final EpisodeRepository episodeRepository;
+  private final S3Presigner s3Presigner;
+  private final String s3Bucket;
 
   @Autowired
   public SeasonService(SeasonRepository seasonRepository,
                        SeasonTranslationRepository seasonTranslationRepository,
                        TVShowRepository tvShowRepository,
-                       EpisodeRepository episodeRepository) {
+                       EpisodeRepository episodeRepository,
+                       S3Presigner s3Presigner,
+                       Config config) {
     this.seasonRepository = seasonRepository;
     this.seasonTranslationRepository = seasonTranslationRepository;
     this.tvShowRepository = tvShowRepository;
     this.episodeRepository = episodeRepository;
+    this.s3Presigner = s3Presigner;
+    this.s3Bucket = config.s3Bucket;
   }
 
   public List<SeasonDTO> listSeasons(String tvShowIdStr) {
@@ -54,8 +66,39 @@ public class SeasonService {
     Long seasonId = Util.validateTSID(seasonIdStr);
     Season season = seasonRepository.findById(seasonId).orElseThrow(ResourceNotFoundException::new);
     if (!season.getTvShow().getId().equals(tvShowId)) throw new ResourceNotFoundException();
+    List<SeasonTranslation> translations = seasonTranslationRepository.findBySeasonIdWithImages(seasonId);
+    List<SeasonTranslationDTO> translationDTOs = translations.stream()
+        .map(this::toTranslationDTO)
+        .sorted(Comparator.comparing(t -> t.locale().name()))
+        .toList();
     return SeasonDetailDTO.from(season,
-        episodeRepository.findByTvShowIdAndSeasonNumber(tvShowId, season.getSeasonNumber()));
+        episodeRepository.findByTvShowIdAndSeasonNumber(tvShowId, season.getSeasonNumber()),
+        translationDTOs);
+  }
+
+  private SeasonTranslationDTO toTranslationDTO(SeasonTranslation t) {
+    List<SeasonImageDTO> images = t.getImages().stream()
+        .map(img -> new SeasonImageDTO(
+            img.getType(),
+            presignUrl(img.getPath()),
+            img.getBlurhash(),
+            img.getExternalSource() != null ? img.getExternalSource().name() : null,
+            img.getExternalPath()
+        ))
+        .toList();
+    return new SeasonTranslationDTO(t.getStrId(), t.getLocale(), t.getTitle(), t.getOverview(), images);
+  }
+
+  private String presignUrl(String s3Key) {
+    try {
+      PresignedGetObjectRequest presigned = s3Presigner.presignGetObject(r -> r
+          .signatureDuration(Duration.ofHours(1))
+          .getObjectRequest(GetObjectRequest.builder().bucket(s3Bucket).key(s3Key).build()));
+      return presigned.url().toString();
+    } catch (Exception e) {
+      log.warn("Failed to presign URL for key {}", s3Key, e);
+      return null;
+    }
   }
 
   @Transactional

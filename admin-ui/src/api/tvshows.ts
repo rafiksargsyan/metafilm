@@ -1,12 +1,12 @@
 import type { User } from 'firebase/auth';
 import { apiRequest } from './client';
-import type { Page, Season, SeasonDetail, TVShow } from '../types';
+import type { EpisodeDetail, Page, Season, SeasonDetail, TVShow, TVShowDetail } from '../types';
 
 export function listTVShows(user: User, page = 0, size = 20): Promise<Page<TVShow>> {
   return apiRequest(`/tvshow?page=${page}&size=${size}`, user);
 }
 
-export function getTVShow(user: User, id: string): Promise<TVShow> {
+export function getTVShow(user: User, id: string): Promise<TVShowDetail> {
   return apiRequest(`/tvshow/${id}`, user);
 }
 
@@ -15,6 +15,10 @@ export function createTVShow(
   data: { originalTitle: string; originalLocale: string; firstAirDate: string | null },
 ): Promise<TVShow> {
   return apiRequest('/tvshow', user, { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function syncTVShow(user: User, id: string): Promise<void> {
+  return apiRequest(`/tvshow/${id}/sync`, user, { method: 'POST' });
 }
 
 export function setTVShowTmdbId(user: User, id: string, tmdbId: number): Promise<TVShow> {
@@ -44,4 +48,8 @@ export function listSeasons(user: User, tvShowId: string): Promise<Season[]> {
 
 export function getSeason(user: User, tvShowId: string, seasonId: string): Promise<SeasonDetail> {
   return apiRequest(`/tvshow/${tvShowId}/season/${seasonId}`, user);
+}
+
+export function getEpisode(user: User, tvShowId: string, episodeId: string): Promise<EpisodeDetail> {
+  return apiRequest(`/tvshow/${tvShowId}/episode/${episodeId}`, user);
 }

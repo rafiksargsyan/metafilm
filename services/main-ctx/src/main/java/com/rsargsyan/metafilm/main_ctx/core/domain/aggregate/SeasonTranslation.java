@@ -34,6 +34,7 @@ public class SeasonTranslation extends AggregateRoot {
   @Column(columnDefinition = "TEXT")
   private String overview;
 
+  @Getter
   @OneToMany(mappedBy = "translation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private List<SeasonImage> images = new ArrayList<>();
 

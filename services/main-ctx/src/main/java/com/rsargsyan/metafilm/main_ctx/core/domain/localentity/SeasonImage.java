@@ -43,6 +43,7 @@ public class SeasonImage {
 
   public SeasonImage(SeasonTranslation translation, ImageType type, String path,
                      ExternalSource externalSource, String externalPath, String blurhash) {
+    if (type != ImageType.POSTER) throw new InvalidMovieImageException("seasons only support POSTER");
     if (path == null || path.isBlank()) throw new InvalidMovieImageException("path is required");
     this.translation = translation;
     this.type = type;

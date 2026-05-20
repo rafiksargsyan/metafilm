@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
   Chip,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
@@ -24,6 +25,8 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SyncIcon from '@mui/icons-material/Sync';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -32,8 +35,9 @@ import {
   setTVShowTmdbId,
   setTVShowTvdbId,
   setTVShowUseTvdb,
+  syncTVShow,
 } from '../api/tvshows';
-import type { Season, TVShow } from '../types';
+import type { Season, TVShowDetail, TVShowTranslation } from '../types';
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -41,8 +45,50 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
       <Typography sx={{ width: 160, flexShrink: 0, color: 'text.secondary', fontSize: 14 }}>
         {label}
       </Typography>
-      <Typography sx={{ fontSize: 14 }}>{value ?? '—'}</Typography>
+      <Typography sx={{ fontSize: 14, wordBreak: 'break-all' }}>{value ?? '—'}</Typography>
     </Box>
+  );
+}
+
+function TranslationRow({ t }: { t: TVShowTranslation }) {
+  const [open, setOpen] = useState(false);
+  const poster = t.images.find((i) => i.type === 'POSTER');
+  const backdrop = t.images.find((i) => i.type === 'BACKDROP');
+
+  return (
+    <>
+      <TableRow hover sx={{ cursor: 'pointer' }} onClick={() => setOpen((o) => !o)}>
+        <TableCell sx={{ width: 32 }}>
+          {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+        </TableCell>
+        <TableCell><Chip label={t.locale} size="small" /></TableCell>
+        <TableCell>{t.title ?? <Typography color="text.secondary" variant="body2">—</Typography>}</TableCell>
+        <TableCell>
+          {poster?.url
+            ? <img src={poster.url} alt="poster" style={{ height: 48, borderRadius: 4 }} />
+            : <Typography color="text.secondary" variant="body2">—</Typography>}
+        </TableCell>
+        <TableCell>
+          {backdrop?.url
+            ? <img src={backdrop.url} alt="backdrop" style={{ height: 48, borderRadius: 4 }} />
+            : <Typography color="text.secondary" variant="body2">—</Typography>}
+        </TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell colSpan={5} sx={{ p: 0, border: 0 }}>
+          <Collapse in={open} unmountOnExit>
+            <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
+              {t.tagline && (
+                <Typography variant="body2" fontStyle="italic" sx={{ mb: 1 }}>{t.tagline}</Typography>
+              )}
+              <Typography variant="body2" color="text.secondary">
+                {t.overview ?? 'No overview.'}
+              </Typography>
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
   );
 }
 
@@ -53,7 +99,7 @@ export function TVShowDetailPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [tvShow, setTVShow] = useState<TVShow | null>(null);
+  const [tvShow, setTVShow] = useState<TVShowDetail | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,9 +107,10 @@ export function TVShowDetailPage() {
   const [idDialog, setIdDialog] = useState<IdDialogType>(null);
   const [idInput, setIdInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!user || !id) return;
     setLoading(true);
     Promise.all([getTVShow(user, id), listSeasons(user, id)])
@@ -74,6 +121,8 @@ export function TVShowDetailPage() {
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [user, id]);
+
+  useEffect(() => { load(); }, [load]);
 
   function openIdDialog(type: IdDialogType) {
     setIdInput('');
@@ -91,7 +140,7 @@ export function TVShowDetailPage() {
         idDialog === 'tmdb'
           ? await setTVShowTmdbId(user, id, val)
           : await setTVShowTvdbId(user, id, val);
-      setTVShow(updated);
+      setTVShow((prev) => prev ? { ...prev, ...updated } : null);
       setIdDialog(null);
     } catch (e: unknown) {
       setActionError(e instanceof Error ? e.message : 'Failed to save');
@@ -105,9 +154,23 @@ export function TVShowDetailPage() {
     setActionError(null);
     try {
       const updated = await setTVShowUseTvdb(user, id, checked);
-      setTVShow(updated);
+      setTVShow((prev) => prev ? { ...prev, ...updated } : null);
     } catch (e: unknown) {
       setActionError(e instanceof Error ? e.message : 'Failed to update');
+    }
+  }
+
+  async function handleSync() {
+    if (!user || !id) return;
+    setSyncing(true);
+    setActionError(null);
+    try {
+      await syncTVShow(user, id);
+      await load();
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : 'Sync failed');
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -163,9 +226,7 @@ export function TVShowDetailPage() {
                   ? <Chip label={tvShow.tmdbId} size="small" color="primary" variant="outlined" />
                   : <Typography variant="body2">Not set</Typography>}
               </Box>
-              <Button size="small" startIcon={<SyncIcon />} onClick={() => openIdDialog('tmdb')}>
-                Set
-              </Button>
+              <Button size="small" onClick={() => openIdDialog('tmdb')}>Set</Button>
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -175,9 +236,7 @@ export function TVShowDetailPage() {
                   ? <Chip label={tvShow.tvdbId} size="small" color="secondary" variant="outlined" />
                   : <Typography variant="body2">Not set</Typography>}
               </Box>
-              <Button size="small" startIcon={<SyncIcon />} onClick={() => openIdDialog('tvdb')}>
-                Set
-              </Button>
+              <Button size="small" onClick={() => openIdDialog('tvdb')}>Set</Button>
             </Box>
 
             <Divider sx={{ my: 1.5 }} />
@@ -190,12 +249,55 @@ export function TVShowDetailPage() {
               }
               label="Use TVDB"
             />
-            <Typography variant="caption" color="text.secondary" display="block">
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
               Sync source: {tvShow.useTvdb ? 'TVDB' : 'TMDB'}
             </Typography>
+
+            <Divider sx={{ mb: 1.5 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="body2" color="text.secondary">Sync from {tvShow.useTvdb ? 'TVDB' : 'TMDB'}</Typography>
+              </Box>
+              <Button
+                size="small"
+                startIcon={syncing ? <CircularProgress size={14} color="inherit" /> : <SyncIcon />}
+                onClick={handleSync}
+                disabled={syncing || (tvShow.tmdbId == null && tvShow.tvdbId == null)}
+              >
+                Sync
+              </Button>
+            </Box>
           </Paper>
         </Box>
       </Box>
+
+      <Typography variant="h6" fontWeight="bold" gutterBottom>
+        Translations
+      </Typography>
+      <Paper sx={{ mb: 3 }}>
+        {tvShow.translations.length === 0 ? (
+          <Box sx={{ p: 3 }}>
+            <Typography color="text.secondary">No translations yet. Run a sync to populate.</Typography>
+          </Box>
+        ) : (
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ width: 32 }} />
+                  <TableCell>Locale</TableCell>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Poster</TableCell>
+                  <TableCell>Backdrop</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tvShow.translations.map((t) => <TranslationRow key={t.id} t={t} />)}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Paper>
 
       <Typography variant="h6" fontWeight="bold" gutterBottom>
         Seasons

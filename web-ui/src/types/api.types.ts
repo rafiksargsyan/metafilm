@@ -42,6 +42,82 @@ export interface TVShow {
   lastAirDate: string | null;
   tmdbId: number | null;
   imdbId: string | null;
+  tvdbId: number | null;
+  useTvdb: boolean;
+}
+
+export interface TVShowImage {
+  type: 'POSTER' | 'BACKDROP';
+  url: string | null;
+  blurhash: string | null;
+}
+
+export interface TVShowTranslation {
+  id: string;
+  locale: string;
+  title: string | null;
+  overview: string | null;
+  tagline: string | null;
+  images: TVShowImage[];
+}
+
+export interface TVShowDetail extends TVShow {
+  translations: TVShowTranslation[];
+}
+
+export interface Season {
+  id: string;
+  tvShowId: string;
+  seasonNumber: number;
+  originalName: string | null;
+  airDate: string | null;
+}
+
+export interface SeasonImage {
+  type: 'POSTER';
+  url: string | null;
+  blurhash: string | null;
+}
+
+export interface SeasonTranslation {
+  id: string;
+  locale: string;
+  title: string | null;
+  overview: string | null;
+  images: SeasonImage[];
+}
+
+export interface Episode {
+  id: string;
+  tvShowId: string;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  absoluteNumber: number | null;
+  airDate: string | null;
+  runtime: number | null;
+}
+
+export interface SeasonDetail extends Season {
+  episodes: Episode[];
+  translations: SeasonTranslation[];
+}
+
+export interface EpisodeImage {
+  type: 'STILL';
+  url: string | null;
+  blurhash: string | null;
+}
+
+export interface EpisodeTranslation {
+  id: string;
+  locale: string;
+  title: string | null;
+  overview: string | null;
+  images: EpisodeImage[];
+}
+
+export interface EpisodeDetail extends Episode {
+  translations: EpisodeTranslation[];
 }
 
 export interface ApiKey {

@@ -12,12 +12,14 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { listTVShows } from '../api/tvshows';
 import type { TVShow } from '../types/api.types';
 
 export function TVShows() {
   const { user, accountId } = useAuth();
+  const navigate = useNavigate();
   const [shows, setShows] = useState<TVShow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -74,7 +76,7 @@ export function TVShows() {
                 </TableRow>
               ) : (
                 shows.map((s) => (
-                  <TableRow key={s.id}>
+                  <TableRow key={s.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/tvshows/${s.id}`)}>
                     <TableCell>{s.originalTitle}</TableCell>
                     <TableCell>{s.originalLanguage}</TableCell>
                     <TableCell>{s.firstAirDate ?? '—'}</TableCell>

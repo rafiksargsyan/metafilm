@@ -27,6 +27,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
     this.apiKey = apiKey;
     this.restClient = RestClient.builder()
         .baseUrl(baseUrl)
+        .defaultHeader("Accept-Encoding", "identity")
         .build();
   }
 
@@ -126,6 +127,30 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
     );
   }
 
+  @Override
+  public List<ExternalTranslationData> fetchEpisodeTranslations(Long tvShowTmdbId, Integer seasonNumber,
+                                                                 Integer episodeNumber) {
+    EpisodeTranslationsResponse response = restClient.get()
+        .uri("/tv/{id}/season/{s}/episode/{e}/translations?api_key={key}",
+            tvShowTmdbId, seasonNumber, episodeNumber, apiKey)
+        .retrieve()
+        .body(EpisodeTranslationsResponse.class);
+
+    if (response == null || response.results() == null) return List.of();
+
+    return response.results().stream()
+        .map(t -> resolveLocale(t.languageCode(), t.countryCode()).map(locale ->
+            new ExternalTranslationData(
+                locale,
+                t.data() != null ? t.data().name() : null,
+                t.data() != null ? t.data().overview() : null,
+                null, null, null
+            )))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .toList();
+  }
+
   private List<ExternalTranslationData> mapShowTranslations(TVShowResponse response,
                                                              List<ImageEntry> posters,
                                                              List<ImageEntry> backdrops) {
@@ -203,6 +228,11 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
   @JsonIgnoreProperties(ignoreUnknown = true)
   record TranslationsWrapper(
       @JsonProperty("translations") List<TranslationEntry> translations
+  ) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record EpisodeTranslationsResponse(
+      @JsonProperty("results") List<TranslationEntry> results
   ) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)

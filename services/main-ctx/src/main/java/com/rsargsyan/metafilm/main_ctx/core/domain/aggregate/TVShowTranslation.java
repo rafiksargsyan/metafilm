@@ -37,6 +37,7 @@ public class TVShowTranslation extends AggregateRoot {
   @Getter
   private String tagline;
 
+  @Getter
   @OneToMany(mappedBy = "translation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private List<TVShowImage> images = new ArrayList<>();
 

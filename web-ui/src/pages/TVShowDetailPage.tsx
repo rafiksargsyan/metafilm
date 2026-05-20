@@ -9,26 +9,30 @@ import {
   Alert,
   Chip,
   IconButton,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Tooltip,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LanguageIcon from '@mui/icons-material/Language';
 import { decode } from 'blurhash';
 import { useAuth } from '../hooks/useAuth';
-import { getMovie } from '../api/movies';
-import type { MovieDetail, MovieImage, MovieTranslation } from '../types/api.types';
+import { getTVShow, listSeasons } from '../api/tvshows';
+import type { TVShowDetail, TVShowImage, TVShowTranslation, Season } from '../types/api.types';
 import { localeLabel } from '../utils/localeLabel';
-
-// ── Blurhash → fade-in image ─────────────────────────────────────────────────
 
 function BlurhashImage({
   image,
   alt,
   style,
 }: {
-  image: MovieImage;
+  image: TVShowImage;
   alt: string;
   style?: React.CSSProperties;
 }) {
@@ -72,38 +76,37 @@ function BlurhashImage({
           }}
         />
       )}
-      <img
-        src={image.url}
-        alt={alt}
-        onLoad={() => setImgLoaded(true)}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          opacity: imgLoaded ? 1 : 0,
-          transition: 'opacity 0.6s ease',
-        }}
-      />
+      {image.url && (
+        <img
+          src={image.url}
+          alt={alt}
+          onLoad={() => setImgLoaded(true)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: imgLoaded ? 1 : 0,
+            transition: 'opacity 0.6s ease',
+          }}
+        />
+      )}
     </Box>
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function getImage(translation: MovieTranslation | null, type: 'POSTER' | 'BACKDROP') {
+function getImage(translation: TVShowTranslation | null, type: 'POSTER' | 'BACKDROP') {
   return translation?.images.find((i) => i.type === type) ?? null;
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-
-export function MovieDetailPage() {
+export function TVShowDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, accountId } = useAuth();
 
-  const [movie, setMovie] = useState<MovieDetail | null>(null);
+  const [tvShow, setTVShow] = useState<TVShowDetail | null>(null);
+  const [seasons, setSeasons] = useState<Season[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLocale, setSelectedLocale] = useState<string>('');
@@ -111,12 +114,13 @@ export function MovieDetailPage() {
   useEffect(() => {
     if (!user || !accountId || !id) return;
     setLoading(true);
-    getMovie(user, accountId, id)
-      .then((data) => {
-        setMovie(data);
-        setSelectedLocale(data.originalLanguage);
+    Promise.all([getTVShow(user, accountId, id), listSeasons(user, accountId, id)])
+      .then(([show, seas]) => {
+        setTVShow(show);
+        setSeasons(seas);
+        setSelectedLocale(show.originalLanguage);
       })
-      .catch((e) => setError(e.message))
+      .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [user, accountId, id]);
 
@@ -128,23 +132,22 @@ export function MovieDetailPage() {
     );
   }
 
-  if (error || !movie) {
-    return <Alert severity="error">{error ?? 'Movie not found.'}</Alert>;
+  if (error || !tvShow) {
+    return <Alert severity="error">{error ?? 'TV Show not found.'}</Alert>;
   }
 
-  const translation = movie.translations.find((t) => t.locale === selectedLocale) ?? null;
+  const translation = tvShow.translations.find((t) => t.locale === selectedLocale) ?? null;
   const backdrop = getImage(translation, 'BACKDROP');
   const poster = getImage(translation, 'POSTER');
 
-  const title = translation?.title || movie.originalTitle;
+  const title = translation?.title || tvShow.originalTitle;
   const overview = translation?.overview ?? null;
   const tagline = translation?.tagline ?? null;
 
-  const locales = movie.translations.map((t) => t.locale);
+  const locales = tvShow.translations.map((t) => t.locale);
 
   return (
     <Box sx={{ mx: -3, mt: -3, minHeight: '100vh' }}>
-      {/* ── Backdrop hero ── */}
       <Box
         sx={{
           position: 'relative',
@@ -155,7 +158,6 @@ export function MovieDetailPage() {
           alignItems: 'flex-end',
         }}
       >
-        {/* Backdrop image */}
         {backdrop ? (
           <Box sx={{ position: 'absolute', inset: 0 }}>
             <BlurhashImage image={backdrop} alt="backdrop" />
@@ -164,7 +166,6 @@ export function MovieDetailPage() {
           <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'grey.900' }} />
         )}
 
-        {/* Gradient overlays */}
         <Box
           sx={{
             position: 'absolute',
@@ -182,16 +183,17 @@ export function MovieDetailPage() {
           }}
         />
 
-        {/* Back button */}
         <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
-          <Tooltip title="Back to movies">
-            <IconButton onClick={() => navigate('/movies')} sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.4)', '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}>
+          <Tooltip title="Back to TV shows">
+            <IconButton
+              onClick={() => navigate('/tvshows')}
+              sx={{ color: 'white', bgcolor: 'rgba(0,0,0,0.4)', '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}
+            >
               <ArrowBackIcon />
             </IconButton>
           </Tooltip>
         </Box>
 
-        {/* Locale selector */}
         {locales.length > 0 && (
           <Box sx={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
             <Select
@@ -217,7 +219,6 @@ export function MovieDetailPage() {
           </Box>
         )}
 
-        {/* Content */}
         <Box
           sx={{
             position: 'relative',
@@ -232,7 +233,6 @@ export function MovieDetailPage() {
             gap: 4,
           }}
         >
-          {/* Poster */}
           <Box
             sx={{
               flexShrink: 0,
@@ -264,7 +264,6 @@ export function MovieDetailPage() {
             )}
           </Box>
 
-          {/* Text info */}
           <Box sx={{ flex: 1, color: 'white', minWidth: 0 }}>
             <Typography
               variant="h3"
@@ -294,55 +293,35 @@ export function MovieDetailPage() {
               </Typography>
             )}
 
-            {/* Metadata chips */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2.5, alignItems: 'center' }}>
-              {movie.releaseDate && (
+              {tvShow.firstAirDate && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'rgba(255,255,255,0.8)' }}>
                   <CalendarTodayIcon sx={{ fontSize: 15 }} />
-                  <Typography variant="body2">{movie.releaseDate}</Typography>
+                  <Typography variant="body2">{tvShow.firstAirDate}</Typography>
                 </Box>
               )}
-              {movie.runtime && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'rgba(255,255,255,0.8)' }}>
-                  <AccessTimeIcon sx={{ fontSize: 15 }} />
-                  <Typography variant="body2">{movie.runtime} min</Typography>
-                </Box>
-              )}
-              {movie.originalLanguage && (
+              {tvShow.originalLanguage && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'rgba(255,255,255,0.8)' }}>
                   <LanguageIcon sx={{ fontSize: 15 }} />
-                  <Typography variant="body2">{localeLabel(movie.originalLanguage)}</Typography>
+                  <Typography variant="body2">{localeLabel(tvShow.originalLanguage)}</Typography>
                 </Box>
               )}
-              {movie.imdbId && (
+              {tvShow.imdbId && (
                 <Chip
-                  label={`IMDb ${movie.imdbId}`}
+                  label={`IMDb ${tvShow.imdbId}`}
                   size="small"
-                  sx={{
-                    bgcolor: '#f5c518',
-                    color: 'black',
-                    fontWeight: 'bold',
-                    fontSize: 11,
-                    height: 22,
-                  }}
+                  sx={{ bgcolor: '#f5c518', color: 'black', fontWeight: 'bold', fontSize: 11, height: 22 }}
                 />
               )}
-              {movie.tmdbId && (
+              {tvShow.tmdbId && (
                 <Chip
-                  label={`TMDB ${movie.tmdbId}`}
+                  label={`TMDB ${tvShow.tmdbId}`}
                   size="small"
-                  sx={{
-                    bgcolor: '#01b4e4',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: 11,
-                    height: 22,
-                  }}
+                  sx={{ bgcolor: '#01b4e4', color: 'white', fontWeight: 'bold', fontSize: 11, height: 22 }}
                 />
               )}
             </Box>
 
-            {/* Overview */}
             {overview && (
               <Typography
                 variant="body1"
@@ -362,6 +341,46 @@ export function MovieDetailPage() {
             )}
           </Box>
         </Box>
+      </Box>
+
+      <Box sx={{ px: { xs: 3, md: 6 }, py: 4 }}>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Seasons
+        </Typography>
+        <Paper>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>#</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Air Date</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {seasons.map((s) => (
+                  <TableRow
+                    key={s.id}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => navigate(`/tvshows/${tvShow.id}/seasons/${s.id}`)}
+                  >
+                    <TableCell>{s.seasonNumber}</TableCell>
+                    <TableCell>{s.originalName ?? `Season ${s.seasonNumber}`}</TableCell>
+                    <TableCell>{s.airDate ?? '—'}</TableCell>
+                  </TableRow>
+                ))}
+                {seasons.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center" sx={{ color: 'text.secondary' }}>
+                      No seasons yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       </Box>
     </Box>
   );

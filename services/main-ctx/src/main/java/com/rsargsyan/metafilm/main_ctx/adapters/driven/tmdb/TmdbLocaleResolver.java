@@ -29,7 +29,8 @@ class TmdbLocaleResolver {
       String tmdbTag = languageCode + "-" + countryCode;
       Locale override = TMDB_LOCALE_MAP.get(tmdbTag);
       if (override != null) return Optional.of(override);
-      return Locale.fromTag(tmdbTag);
+      Optional<Locale> exact = Locale.fromTag(tmdbTag);
+      if (exact.isPresent()) return exact;
     }
     return Locale.fromLanguageCode(languageCode);
   }

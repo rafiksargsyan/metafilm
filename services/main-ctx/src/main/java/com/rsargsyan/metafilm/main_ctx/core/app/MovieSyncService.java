@@ -2,6 +2,7 @@ package com.rsargsyan.metafilm.main_ctx.core.app;
 
 import com.rsargsyan.metafilm.main_ctx.Config;
 import com.rsargsyan.metafilm.main_ctx.core.BlurhashUtil;
+import org.springframework.beans.factory.annotation.Value;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.Movie;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.MovieTranslation;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ExternalSource;
@@ -36,6 +37,7 @@ public class MovieSyncService {
   private final MovieSyncLockService syncLockService;
   private final S3Client s3Client;
   private final String s3Bucket;
+  private final String tmdbImageBaseUrl;
   private final RestClient imageDownloadClient;
 
   @Autowired
@@ -44,13 +46,15 @@ public class MovieSyncService {
                           TmdbMovieClient tmdbMovieClient,
                           MovieSyncLockService syncLockService,
                           S3Client s3Client,
-                          Config config) {
+                          Config config,
+                          @Value("${tmdb.image-base-url}") String tmdbImageBaseUrl) {
     this.movieRepository = movieRepository;
     this.movieTranslationRepository = movieTranslationRepository;
     this.tmdbMovieClient = tmdbMovieClient;
     this.syncLockService = syncLockService;
     this.s3Client = s3Client;
     this.s3Bucket = config.s3Bucket;
+    this.tmdbImageBaseUrl = tmdbImageBaseUrl;
     this.imageDownloadClient = RestClient.create();
   }
 
@@ -157,7 +161,7 @@ public class MovieSyncService {
     byte[] imageBytes;
     try {
       imageBytes = imageDownloadClient.get()
-          .uri(URI.create("https://image.tmdb.org/t/p/original" + tmdbPath))
+          .uri(URI.create(tmdbImageBaseUrl + tmdbPath))
           .retrieve()
           .body(byte[].class);
     } catch (Exception e) {

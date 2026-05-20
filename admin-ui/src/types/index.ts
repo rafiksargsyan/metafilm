@@ -52,12 +52,49 @@ export interface TVShow {
   useTvdb: boolean;
 }
 
+export interface TVShowImage {
+  type: 'POSTER' | 'BACKDROP';
+  url: string | null;
+  blurhash: string | null;
+  externalSource: string | null;
+  externalPath: string | null;
+}
+
+export interface TVShowTranslation {
+  id: string;
+  locale: string;
+  title: string | null;
+  overview: string | null;
+  tagline: string | null;
+  images: TVShowImage[];
+}
+
+export interface TVShowDetail extends TVShow {
+  translations: TVShowTranslation[];
+}
+
 export interface Season {
   id: string;
   tvShowId: string;
   seasonNumber: number;
   originalName: string | null;
   airDate: string | null;
+}
+
+export interface SeasonImage {
+  type: 'POSTER';
+  url: string | null;
+  blurhash: string | null;
+  externalSource: string | null;
+  externalPath: string | null;
+}
+
+export interface SeasonTranslation {
+  id: string;
+  locale: string;
+  title: string | null;
+  overview: string | null;
+  images: SeasonImage[];
 }
 
 export interface Episode {
@@ -70,32 +107,62 @@ export interface Episode {
   runtime: number | null;
 }
 
+export interface EpisodeImage {
+  type: 'STILL';
+  url: string | null;
+  blurhash: string | null;
+  externalSource: string | null;
+  externalPath: string | null;
+}
+
+export interface EpisodeTranslation {
+  id: string;
+  locale: string;
+  title: string | null;
+  overview: string | null;
+  images: EpisodeImage[];
+}
+
 export interface SeasonDetail extends Season {
   episodes: Episode[];
+  translations: SeasonTranslation[];
+}
+
+export interface EpisodeDetail extends Episode {
+  translations: EpisodeTranslation[];
 }
 
 export const LOCALES: { value: string; label: string }[] = [
+  { value: 'EN', label: 'English' },
   { value: 'EN_US', label: 'English (US)' },
   { value: 'EN_GB', label: 'English (GB)' },
   { value: 'EN_AU', label: 'English (AU)' },
-  { value: 'FR_FR', label: 'French' },
-  { value: 'DE_DE', label: 'German' },
+  { value: 'FR', label: 'French' },
+  { value: 'FR_FR', label: 'French (France)' },
+  { value: 'FR_CA', label: 'French (Canada)' },
+  { value: 'DE', label: 'German' },
+  { value: 'ES', label: 'Spanish' },
   { value: 'ES_ES', label: 'Spanish (Spain)' },
-  { value: 'ES_MX', label: 'Spanish (Mexico)' },
-  { value: 'IT_IT', label: 'Italian' },
-  { value: 'PT_PT', label: 'Portuguese (Portugal)' },
+  { value: 'ES_419', label: 'Spanish (Latin American)' },
+  { value: 'IT', label: 'Italian' },
+  { value: 'PT', label: 'Portuguese' },
   { value: 'PT_BR', label: 'Portuguese (Brazil)' },
-  { value: 'RU_RU', label: 'Russian' },
-  { value: 'JA_JP', label: 'Japanese' },
-  { value: 'KO_KR', label: 'Korean' },
+  { value: 'PT_PT', label: 'Portuguese (Portugal)' },
+  { value: 'RU', label: 'Russian' },
+  { value: 'JA', label: 'Japanese' },
+  { value: 'KO', label: 'Korean' },
+  { value: 'ZH', label: 'Chinese' },
   { value: 'ZH_HANS_CN', label: 'Chinese (Simplified)' },
   { value: 'ZH_HANT_TW', label: 'Chinese (Traditional, TW)' },
   { value: 'ZH_HANT_HK', label: 'Chinese (Traditional, HK)' },
-  { value: 'AR_SA', label: 'Arabic' },
-  { value: 'HI_IN', label: 'Hindi' },
-  { value: 'TR_TR', label: 'Turkish' },
-  { value: 'PL_PL', label: 'Polish' },
-  { value: 'NL_NL', label: 'Dutch' },
-  { value: 'SV_SE', label: 'Swedish' },
-  { value: 'HY_AM', label: 'Armenian' },
+  { value: 'AR', label: 'Arabic' },
+  { value: 'HI', label: 'Hindi' },
+  { value: 'TR', label: 'Turkish' },
+  { value: 'PL', label: 'Polish' },
+  { value: 'NL', label: 'Dutch' },
+  { value: 'NL_NL', label: 'Dutch (Netherlands)' },
+  { value: 'NL_BE', label: 'Dutch (Belgium)' },
+  { value: 'SV', label: 'Swedish' },
+  { value: 'HY', label: 'Armenian' },
+  { value: 'UK', label: 'Ukrainian' },
 ];

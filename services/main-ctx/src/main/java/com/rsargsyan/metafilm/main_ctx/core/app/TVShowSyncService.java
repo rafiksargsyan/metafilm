@@ -8,10 +8,12 @@ import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ExternalSource;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ImageType;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.Locale;
 import com.rsargsyan.metafilm.main_ctx.core.exception.ResourceNotFoundException;
+import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.Episode;
 import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalEpisodeData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalSeasonData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalTranslationData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalTVShowData;
+import com.rsargsyan.metafilm.main_ctx.core.ports.repository.EpisodeRepository;
 import com.rsargsyan.metafilm.main_ctx.core.ports.repository.TVShowRepository;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbTVShowClient;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tvdb.TvdbTVShowClient;
@@ -28,6 +30,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import org.springframework.data.domain.PageRequest;
 
 import java.net.URI;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -39,6 +42,7 @@ public class TVShowSyncService {
   private final TVShowService tvShowService;
   private final SeasonService seasonService;
   private final EpisodeService episodeService;
+  private final EpisodeRepository episodeRepository;
   private final S3Client s3Client;
   private final String s3Bucket;
   private final String tmdbImageBaseUrl;
@@ -51,6 +55,7 @@ public class TVShowSyncService {
                            TVShowService tvShowService,
                            SeasonService seasonService,
                            EpisodeService episodeService,
+                           EpisodeRepository episodeRepository,
                            S3Client s3Client,
                            Config config,
                            @Value("${tmdb.image-base-url}") String tmdbImageBaseUrl) {
@@ -60,6 +65,7 @@ public class TVShowSyncService {
     this.tvShowService = tvShowService;
     this.seasonService = seasonService;
     this.episodeService = episodeService;
+    this.episodeRepository = episodeRepository;
     this.s3Client = s3Client;
     this.s3Bucket = config.s3Bucket;
     this.tmdbImageBaseUrl = tmdbImageBaseUrl;
@@ -80,6 +86,45 @@ public class TVShowSyncService {
         }
       }
     } while (batch.hasNext());
+  }
+
+  public void syncAllEpisodeTranslations() {
+    int page = 0;
+    int pageSize = 50;
+    org.springframework.data.domain.Page<TVShow> batch;
+    do {
+      batch = tvShowRepository.findAll(PageRequest.of(page++, pageSize));
+      for (TVShow tvShow : batch.getContent()) {
+        if (tvShow.getTmdbId() == null) continue;
+        try {
+          syncEpisodeTranslationsForShow(tvShow);
+        } catch (Exception e) {
+          log.error("Failed to sync episode translations for tvShow {}", tvShow.getStrId(), e);
+        }
+      }
+    } while (batch.hasNext());
+  }
+
+  private void syncEpisodeTranslationsForShow(TVShow tvShow) {
+    List<Episode> episodes = episodeRepository.findByTvShowId(tvShow.getId());
+    for (Episode episode : episodes) {
+      if (episode.getSeasonNumber() == null || episode.getEpisodeNumber() == null) continue;
+      try {
+        List<ExternalTranslationData> translations = tmdbTVShowClient.fetchEpisodeTranslations(
+            tvShow.getTmdbId(), episode.getSeasonNumber(), episode.getEpisodeNumber());
+        for (ExternalTranslationData t : translations) {
+          try {
+            episodeService.upsertTranslation(episode.getStrId(), t.locale(), t.title(), t.overview());
+          } catch (Exception e) {
+            log.error("Failed to upsert translation {} for episode {}/{} of tvShow {}",
+                t.locale(), episode.getSeasonNumber(), episode.getEpisodeNumber(), tvShow.getStrId(), e);
+          }
+        }
+      } catch (Exception e) {
+        log.error("Failed to fetch translations for episode {}/{} of tvShow {}",
+            episode.getSeasonNumber(), episode.getEpisodeNumber(), tvShow.getStrId(), e);
+      }
+    }
   }
 
   @Transactional
@@ -219,7 +264,7 @@ public class TVShowSyncService {
       if (r != null) {
         for (ExternalTranslationData t : episode.translations()) {
           try {
-            episodeService.upsertTranslationImage(episodeIdStr, t.locale(), ImageType.POSTER, r.s3Key(), externalSource, episode.stillPath(), r.blurhash());
+            episodeService.upsertTranslationImage(episodeIdStr, t.locale(), ImageType.STILL, r.s3Key(), externalSource, episode.stillPath(), r.blurhash());
           } catch (Exception e) {
             log.error("Failed to upsert still image for translation {} of episode {}/{} of tvShow {}",
                 t.locale(), seasonNumber, episode.episodeNumber(), tvShowIdStr, e);

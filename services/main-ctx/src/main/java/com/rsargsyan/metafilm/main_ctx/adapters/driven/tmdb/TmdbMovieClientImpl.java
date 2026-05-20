@@ -28,6 +28,7 @@ public class TmdbMovieClientImpl implements TmdbMovieClient {
     this.apiKey = apiKey;
     this.restClient = RestClient.builder()
         .baseUrl(baseUrl)
+        .defaultHeader("Accept-Encoding", "identity")
         .build();
   }
 

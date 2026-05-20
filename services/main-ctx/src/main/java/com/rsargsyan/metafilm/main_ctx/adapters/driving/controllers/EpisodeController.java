@@ -3,6 +3,7 @@ package com.rsargsyan.metafilm.main_ctx.adapters.driving.controllers;
 import com.rsargsyan.metafilm.main_ctx.core.app.EpisodeService;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.EpisodeCreationDTO;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.EpisodeDTO;
+import com.rsargsyan.metafilm.main_ctx.core.app.dto.EpisodeDetailDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,12 @@ public class EpisodeController {
   @Autowired
   public EpisodeController(EpisodeService episodeService) {
     this.episodeService = episodeService;
+  }
+
+  @GetMapping("/{episodeId}")
+  public ResponseEntity<EpisodeDetailDTO> getEpisode(@PathVariable String tvShowId,
+                                                      @PathVariable String episodeId) {
+    return ResponseEntity.ok(episodeService.getEpisodeDetail(tvShowId, episodeId));
   }
 
   @PostMapping

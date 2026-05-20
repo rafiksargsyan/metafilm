@@ -8,6 +8,9 @@ import { Dashboard } from '../pages/Dashboard';
 import { Movies } from '../pages/Movies';
 import { MovieDetailPage } from '../pages/MovieDetailPage';
 import { TVShows } from '../pages/TVShows';
+import { TVShowDetailPage } from '../pages/TVShowDetailPage';
+import { SeasonDetailPage } from '../pages/SeasonDetailPage';
+import { EpisodeDetailPage } from '../pages/EpisodeDetailPage';
 import { ApiKeys } from '../pages/ApiKeys';
 
 export default function App() {
@@ -29,6 +32,9 @@ export default function App() {
             <Route path="/movies" element={<Movies />} />
             <Route path="/movies/:id" element={<MovieDetailPage />} />
             <Route path="/tvshows" element={<TVShows />} />
+            <Route path="/tvshows/:id" element={<TVShowDetailPage />} />
+            <Route path="/tvshows/:id/seasons/:seasonId" element={<SeasonDetailPage />} />
+            <Route path="/tvshows/:id/seasons/:seasonId/episodes/:episodeId" element={<EpisodeDetailPage />} />
             <Route path="/api-keys" element={<ApiKeys />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
