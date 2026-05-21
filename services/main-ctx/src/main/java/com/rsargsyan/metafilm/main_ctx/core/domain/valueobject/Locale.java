@@ -91,10 +91,18 @@ public enum Locale {
   public String getDisplayName() { return displayName; }
 
   @JsonCreator
+  public static Locale fromJson(String value) {
+    if (value == null) return null;
+    for (Locale l : values()) {
+      if (l.tag.equalsIgnoreCase(value) || l.name().equalsIgnoreCase(value)) return l;
+    }
+    return null;
+  }
+
   public static Optional<Locale> fromTag(String tag) {
     if (tag == null) return Optional.empty();
     for (Locale l : values()) {
-      if (l.tag.equalsIgnoreCase(tag)) return Optional.of(l);
+      if (l.tag.equalsIgnoreCase(tag) || l.name().equalsIgnoreCase(tag)) return Optional.of(l);
     }
     return Optional.empty();
   }

@@ -47,6 +47,10 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
 
     List<ExternalTranslationData> translations = mapShowTranslations(response, posters, backdrops);
 
+    List<Integer> genreIds = response.genres() != null
+        ? response.genres().stream().map(GenreEntry::id).toList()
+        : List.of();
+
     List<ExternalSeasonData> seasons = response.seasons() != null
         ? response.seasons().stream()
             .filter(s -> s.seasonNumber() != null && s.seasonNumber() > 0) // skip season 0 (Specials)
@@ -63,6 +67,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
         originalLocale,
         parseDate(response.firstAirDate()),
         parseDate(response.lastAirDate()),
+        genreIds,
         translations,
         seasons
     );
@@ -191,9 +196,15 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
       @JsonProperty("overview") String overview,
       @JsonProperty("tagline") String tagline,
       @JsonProperty("origin_country") List<String> originCountry,
+      @JsonProperty("genres") List<GenreEntry> genres,
       @JsonProperty("seasons") List<SeasonEntry> seasons,
       @JsonProperty("translations") TranslationsWrapper translations,
       @JsonProperty("images") ImagesWrapper images
+  ) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record GenreEntry(
+      @JsonProperty("id") Integer id
   ) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)

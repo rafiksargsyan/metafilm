@@ -16,6 +16,7 @@ import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalTVShowData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.repository.EpisodeRepository;
 import com.rsargsyan.metafilm.main_ctx.core.ports.repository.TVShowRepository;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbTVShowClient;
+import com.rsargsyan.metafilm.main_ctx.core.app.TmdbGenreTagMapping;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tvdb.TvdbTVShowClient;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ import org.springframework.data.domain.PageRequest;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -43,6 +45,7 @@ public class TVShowSyncService {
   private final SeasonService seasonService;
   private final EpisodeService episodeService;
   private final EpisodeRepository episodeRepository;
+  private final TagService tagService;
   private final S3Client s3Client;
   private final String s3Bucket;
   private final String tmdbImageBaseUrl;
@@ -56,6 +59,7 @@ public class TVShowSyncService {
                            SeasonService seasonService,
                            EpisodeService episodeService,
                            EpisodeRepository episodeRepository,
+                           TagService tagService,
                            S3Client s3Client,
                            Config config,
                            @Value("${tmdb.image-base-url}") String tmdbImageBaseUrl) {
@@ -66,6 +70,7 @@ public class TVShowSyncService {
     this.seasonService = seasonService;
     this.episodeService = episodeService;
     this.episodeRepository = episodeRepository;
+    this.tagService = tagService;
     this.s3Client = s3Client;
     this.s3Bucket = config.s3Bucket;
     this.tmdbImageBaseUrl = tmdbImageBaseUrl;
@@ -157,6 +162,17 @@ public class TVShowSyncService {
     ExternalSource externalSource = tvShow.isUseTvdb() ? ExternalSource.TVDB : ExternalSource.TMDB;
 
     tvShowService.updateFromExternal(tvShowIdStr, data.originalTitle(), data.firstAirDate(), data.lastAirDate());
+
+    List<String> tagKeys = data.genreIds().stream()
+        .map(TmdbGenreTagMapping.TV_GENRES::get)
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
+    try {
+      tagService.syncTVShowTags(tvShowId, tagKeys);
+    } catch (Exception e) {
+      log.error("Failed to sync tags for tvShow {}", tvShowIdStr, e);
+    }
 
     for (ExternalTranslationData t : data.translations()) {
       try {

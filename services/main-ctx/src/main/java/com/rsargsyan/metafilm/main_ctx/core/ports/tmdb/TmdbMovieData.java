@@ -16,6 +16,7 @@ public record TmdbMovieData(
     Optional<Locale> originalLanguage,
     LocalDate releaseDate,
     Integer runtime,
+    List<Integer> genreIds,
     List<TmdbTranslationData> translations
 ) {
 }

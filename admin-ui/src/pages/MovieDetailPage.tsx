@@ -12,6 +12,10 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
   Paper,
   Table,
   TableBody,
@@ -24,12 +28,14 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SyncIcon from '@mui/icons-material/Sync';
+import AddIcon from '@mui/icons-material/Add';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getMovie, setMovieTmdbId, syncMovie } from '../api/movies';
-import type { MovieDetail, MovieTranslation, MovieImage } from '../types';
+import { listTags, addTagToMovie, removeTagFromMovie } from '../api/tags';
+import type { MovieDetail, MovieTranslation, MovieImage, Tag } from '../types';
 import { LOCALES } from '../types';
 
 function localeLabel(locale: string): string {
@@ -212,11 +218,15 @@ export function MovieDetailPage() {
   const [syncing, setSyncing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [addTagOpen, setAddTagOpen] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
+
   const load = useCallback(() => {
     if (!user || !id) return;
     setLoading(true);
-    getMovie(user, id)
-      .then(setMovie)
+    Promise.all([getMovie(user, id), listTags(user)])
+      .then(([m, tags]) => { setMovie(m); setAllTags(tags.sort((a, b) => a.key.localeCompare(b.key))); })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
   }, [user, id]);
@@ -236,6 +246,29 @@ export function MovieDetailPage() {
       setActionError(e instanceof Error ? e.message : 'Failed to set TMDB ID');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleAddTag(tagId: string) {
+    if (!user || !id) return;
+    setTagError(null);
+    try {
+      await addTagToMovie(user, id, tagId);
+      setAddTagOpen(false);
+      load();
+    } catch (e: unknown) {
+      setTagError(e instanceof Error ? e.message : 'Failed to add tag');
+    }
+  }
+
+  async function handleRemoveTag(tagId: string) {
+    if (!user || !id) return;
+    setTagError(null);
+    try {
+      await removeTagFromMovie(user, id, tagId);
+      load();
+    } catch (e: unknown) {
+      setTagError(e instanceof Error ? e.message : 'Failed to remove tag');
     }
   }
 
@@ -328,6 +361,34 @@ export function MovieDetailPage() {
         </Box>
       </Box>
 
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Tags ({movie.tags.length})
+          </Typography>
+          <Button size="small" startIcon={<AddIcon />} onClick={() => { setTagError(null); setAddTagOpen(true); }}>
+            Add Tag
+          </Button>
+        </Box>
+        <Divider sx={{ mb: 2 }} />
+        {tagError && <Alert severity="error" sx={{ mb: 1 }}>{tagError}</Alert>}
+        {movie.tags.length === 0 ? (
+          <Typography color="text.secondary" variant="body2">No tags assigned.</Typography>
+        ) : (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {movie.tags.map((tag) => (
+              <Chip
+                key={tag.id}
+                label={tag.key}
+                size="small"
+                onDelete={() => handleRemoveTag(tag.id)}
+                variant="outlined"
+              />
+            ))}
+          </Box>
+        )}
+      </Paper>
+
       <Paper sx={{ p: 3 }}>
         <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
           Translations ({movie.translations.length})
@@ -354,6 +415,35 @@ export function MovieDetailPage() {
           </Table>
         )}
       </Paper>
+
+      <Dialog open={addTagOpen} onClose={() => setAddTagOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Add Tag</DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {tagError && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{tagError}</Alert>}
+          <List dense>
+            {allTags
+              .filter((t) => !movie.tags.some((mt) => mt.id === t.id))
+              .map((tag) => (
+                <ListItem key={tag.id} disablePadding>
+                  <ListItemButton onClick={() => handleAddTag(tag.id)}>
+                    <ListItemText
+                      primary={<Typography sx={{ fontFamily: 'monospace', fontSize: 13 }}>{tag.key}</Typography>}
+                      secondary={tag.name}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            {allTags.filter((t) => !movie.tags.some((mt) => mt.id === t.id)).length === 0 && (
+              <ListItem>
+                <ListItemText primary={<Typography color="text.secondary">All tags already assigned</Typography>} />
+              </ListItem>
+            )}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddTagOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={tmdbDialog} onClose={() => setTmdbDialog(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Set TMDB ID</DialogTitle>

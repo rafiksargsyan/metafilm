@@ -6,6 +6,9 @@ import lombok.Getter;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 public class Movie extends AggregateRoot {
@@ -40,6 +43,14 @@ public class Movie extends AggregateRoot {
   @Getter
   private Instant syncStartedAt;
 
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "movie_tag",
+      joinColumns = @JoinColumn(name = "movie_id"),
+      inverseJoinColumns = @JoinColumn(name = "tag_id")
+  )
+  private Set<Tag> tags = new HashSet<>();
+
   @SuppressWarnings("unused")
   Movie() {}
 
@@ -51,6 +62,20 @@ public class Movie extends AggregateRoot {
     this.runtime = runtime;
     this.tmdbId = tmdbId;
     this.imdbId = imdbId;
+  }
+
+  public Set<Tag> getTags() {
+    return Collections.unmodifiableSet(tags);
+  }
+
+  public void addTag(Tag tag) {
+    tags.add(tag);
+    touch();
+  }
+
+  public void removeTag(Tag tag) {
+    tags.remove(tag);
+    touch();
   }
 
   public void setTmdbId(Long tmdbId) {

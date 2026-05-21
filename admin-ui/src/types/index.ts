@@ -35,8 +35,16 @@ export interface MovieTranslation {
   images: MovieImage[];
 }
 
+export interface Tag {
+  id: string;
+  key: string;
+  name: string;
+  localizations: Record<string, string>;
+}
+
 export interface MovieDetail extends Movie {
   syncInProgress: boolean;
+  tags: Tag[];
   translations: MovieTranslation[];
 }
 
@@ -70,6 +78,7 @@ export interface TVShowTranslation {
 }
 
 export interface TVShowDetail extends TVShow {
+  tags: Tag[];
   translations: TVShowTranslation[];
 }
 

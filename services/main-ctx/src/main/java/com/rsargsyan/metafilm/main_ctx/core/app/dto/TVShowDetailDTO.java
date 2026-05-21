@@ -16,9 +16,11 @@ public record TVShowDetailDTO(
     String imdbId,
     Long tvdbId,
     boolean useTvdb,
+    List<TagDTO> tags,
     List<TVShowTranslationDTO> translations
 ) {
-  public static TVShowDetailDTO from(TVShow tvShow, List<TVShowTranslationDTO> translations) {
+  public static TVShowDetailDTO from(TVShow tvShow, List<TagDTO> tags,
+                                     List<TVShowTranslationDTO> translations) {
     return new TVShowDetailDTO(
         tvShow.getStrId(),
         tvShow.getOriginalTitle(),
@@ -29,6 +31,7 @@ public record TVShowDetailDTO(
         tvShow.getImdbId(),
         tvShow.getTvdbId(),
         tvShow.isUseTvdb(),
+        tags,
         translations
     );
   }

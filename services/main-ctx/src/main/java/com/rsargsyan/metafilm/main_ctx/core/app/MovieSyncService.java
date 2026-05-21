@@ -4,6 +4,7 @@ import com.rsargsyan.metafilm.main_ctx.Config;
 import com.rsargsyan.metafilm.main_ctx.core.BlurhashUtil;
 import org.springframework.beans.factory.annotation.Value;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.Movie;
+import com.rsargsyan.metafilm.main_ctx.core.app.TmdbGenreTagMapping;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.MovieTranslation;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ExternalSource;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ImageType;
@@ -26,6 +27,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import org.springframework.data.domain.PageRequest;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -35,6 +38,7 @@ public class MovieSyncService {
   private final MovieTranslationRepository movieTranslationRepository;
   private final TmdbMovieClient tmdbMovieClient;
   private final MovieSyncLockService syncLockService;
+  private final TagService tagService;
   private final S3Client s3Client;
   private final String s3Bucket;
   private final String tmdbImageBaseUrl;
@@ -45,6 +49,7 @@ public class MovieSyncService {
                           MovieTranslationRepository movieTranslationRepository,
                           TmdbMovieClient tmdbMovieClient,
                           MovieSyncLockService syncLockService,
+                          TagService tagService,
                           S3Client s3Client,
                           Config config,
                           @Value("${tmdb.image-base-url}") String tmdbImageBaseUrl) {
@@ -52,6 +57,7 @@ public class MovieSyncService {
     this.movieTranslationRepository = movieTranslationRepository;
     this.tmdbMovieClient = tmdbMovieClient;
     this.syncLockService = syncLockService;
+    this.tagService = tagService;
     this.s3Client = s3Client;
     this.s3Bucket = config.s3Bucket;
     this.tmdbImageBaseUrl = tmdbImageBaseUrl;
@@ -115,6 +121,17 @@ public class MovieSyncService {
       } catch (Exception e) {
         log.error("Failed to sync translation {} for movie {}", t.locale(), movieId, e);
       }
+    }
+
+    List<String> tagKeys = data.genreIds().stream()
+        .map(TmdbGenreTagMapping.MOVIE_GENRES::get)
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
+    try {
+      tagService.syncMovieTags(movieId, tagKeys);
+    } catch (Exception e) {
+      log.error("Failed to sync tags for movie {}", movieIdStr, e);
     }
 
     // Always ensure the movie's stored original language has a translation entry.

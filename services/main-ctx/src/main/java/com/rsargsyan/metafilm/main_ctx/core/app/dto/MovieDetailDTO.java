@@ -15,9 +15,11 @@ public record MovieDetailDTO(
     Long tmdbId,
     String imdbId,
     boolean syncInProgress,
+    List<TagDTO> tags,
     List<MovieTranslationDTO> translations
 ) {
   public static MovieDetailDTO from(Movie movie, boolean syncInProgress,
+                                    List<TagDTO> tags,
                                     List<MovieTranslationDTO> translations) {
     return new MovieDetailDTO(
         movie.getStrId(),
@@ -28,6 +30,7 @@ public record MovieDetailDTO(
         movie.getTmdbId(),
         movie.getImdbId(),
         syncInProgress,
+        tags,
         translations
     );
   }

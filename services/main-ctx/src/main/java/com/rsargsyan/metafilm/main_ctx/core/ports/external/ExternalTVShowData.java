@@ -15,6 +15,7 @@ public record ExternalTVShowData(
     Optional<Locale> originalLocale,
     LocalDate firstAirDate,
     LocalDate lastAirDate,
+    List<Integer> genreIds,
     List<ExternalTranslationData> translations,
     List<ExternalSeasonData> seasons
 ) {

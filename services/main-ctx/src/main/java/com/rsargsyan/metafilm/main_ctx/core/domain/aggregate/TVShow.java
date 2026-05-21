@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tvshow")
@@ -41,6 +44,14 @@ public class TVShow extends AggregateRoot {
   @Column(nullable = false)
   private boolean useTvdb = false;
 
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "tvshow_tag",
+      joinColumns = @JoinColumn(name = "tvshow_id"),
+      inverseJoinColumns = @JoinColumn(name = "tag_id")
+  )
+  private Set<Tag> tags = new HashSet<>();
+
   @SuppressWarnings("unused")
   TVShow() {}
 
@@ -53,6 +64,20 @@ public class TVShow extends AggregateRoot {
     this.tmdbId = tmdbId;
     this.imdbId = imdbId;
     this.tvdbId = tvdbId;
+  }
+
+  public Set<Tag> getTags() {
+    return Collections.unmodifiableSet(tags);
+  }
+
+  public void addTag(Tag tag) {
+    tags.add(tag);
+    touch();
+  }
+
+  public void removeTag(Tag tag) {
+    tags.remove(tag);
+    touch();
   }
 
   public void setTmdbId(Long tmdbId) {

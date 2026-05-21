@@ -12,6 +12,10 @@ import {
   DialogTitle,
   Divider,
   FormControlLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
   Paper,
   Switch,
   Table,
@@ -25,6 +29,7 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SyncIcon from '@mui/icons-material/Sync';
+import AddIcon from '@mui/icons-material/Add';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -37,7 +42,8 @@ import {
   setTVShowUseTvdb,
   syncTVShow,
 } from '../api/tvshows';
-import type { Season, TVShowDetail, TVShowTranslation } from '../types';
+import { listTags, addTagToTVShow, removeTagFromTVShow } from '../api/tags';
+import type { Season, Tag, TVShowDetail, TVShowTranslation } from '../types';
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -110,13 +116,18 @@ export function TVShowDetailPage() {
   const [syncing, setSyncing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [addTagOpen, setAddTagOpen] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
+
   const load = useCallback(() => {
     if (!user || !id) return;
     setLoading(true);
-    Promise.all([getTVShow(user, id), listSeasons(user, id)])
-      .then(([show, seas]) => {
+    Promise.all([getTVShow(user, id), listSeasons(user, id), listTags(user)])
+      .then(([show, seas, tags]) => {
         setTVShow(show);
         setSeasons(seas);
+        setAllTags(tags.sort((a, b) => a.key.localeCompare(b.key)));
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -157,6 +168,29 @@ export function TVShowDetailPage() {
       setTVShow((prev) => prev ? { ...prev, ...updated } : null);
     } catch (e: unknown) {
       setActionError(e instanceof Error ? e.message : 'Failed to update');
+    }
+  }
+
+  async function handleAddTag(tagId: string) {
+    if (!user || !id) return;
+    setTagError(null);
+    try {
+      await addTagToTVShow(user, id, tagId);
+      setAddTagOpen(false);
+      load();
+    } catch (e: unknown) {
+      setTagError(e instanceof Error ? e.message : 'Failed to add tag');
+    }
+  }
+
+  async function handleRemoveTag(tagId: string) {
+    if (!user || !id) return;
+    setTagError(null);
+    try {
+      await removeTagFromTVShow(user, id, tagId);
+      load();
+    } catch (e: unknown) {
+      setTagError(e instanceof Error ? e.message : 'Failed to remove tag');
     }
   }
 
@@ -271,6 +305,34 @@ export function TVShowDetailPage() {
         </Box>
       </Box>
 
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Tags ({tvShow.tags.length})
+          </Typography>
+          <Button size="small" startIcon={<AddIcon />} onClick={() => { setTagError(null); setAddTagOpen(true); }}>
+            Add Tag
+          </Button>
+        </Box>
+        <Divider sx={{ mb: 2 }} />
+        {tagError && <Alert severity="error" sx={{ mb: 1 }}>{tagError}</Alert>}
+        {tvShow.tags.length === 0 ? (
+          <Typography color="text.secondary" variant="body2">No tags assigned.</Typography>
+        ) : (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {tvShow.tags.map((tag) => (
+              <Chip
+                key={tag.id}
+                label={tag.key}
+                size="small"
+                onDelete={() => handleRemoveTag(tag.id)}
+                variant="outlined"
+              />
+            ))}
+          </Box>
+        )}
+      </Paper>
+
       <Typography variant="h6" fontWeight="bold" gutterBottom>
         Translations
       </Typography>
@@ -336,6 +398,35 @@ export function TVShowDetailPage() {
           </Table>
         </TableContainer>
       </Paper>
+
+      <Dialog open={addTagOpen} onClose={() => setAddTagOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Add Tag</DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {tagError && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{tagError}</Alert>}
+          <List dense>
+            {allTags
+              .filter((t) => !tvShow.tags.some((st) => st.id === t.id))
+              .map((tag) => (
+                <ListItem key={tag.id} disablePadding>
+                  <ListItemButton onClick={() => handleAddTag(tag.id)}>
+                    <ListItemText
+                      primary={<Typography sx={{ fontFamily: 'monospace', fontSize: 13 }}>{tag.key}</Typography>}
+                      secondary={tag.name}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            {allTags.filter((t) => !tvShow.tags.some((st) => st.id === t.id)).length === 0 && (
+              <ListItem>
+                <ListItemText primary={<Typography color="text.secondary">All tags already assigned</Typography>} />
+              </ListItem>
+            )}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddTagOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={idDialog !== null} onClose={() => setIdDialog(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Set {idDialog === 'tmdb' ? 'TMDB' : 'TVDB'} ID</DialogTitle>

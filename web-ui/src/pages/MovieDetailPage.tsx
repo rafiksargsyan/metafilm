@@ -18,7 +18,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import { decode } from 'blurhash';
 import { useAuth } from '../hooks/useAuth';
 import { getMovie } from '../api/movies';
-import type { MovieDetail, MovieImage, MovieTranslation } from '../types/api.types';
+import type { MovieDetail, MovieImage, MovieTranslation, Tag } from '../types/api.types';
 import { localeLabel } from '../utils/localeLabel';
 
 // ── Blurhash → fade-in image ─────────────────────────────────────────────────
@@ -341,6 +341,26 @@ export function MovieDetailPage() {
                 />
               )}
             </Box>
+
+            {/* Genre tags */}
+            {movie.tags.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2 }}>
+                {movie.tags.map((tag: Tag) => (
+                  <Chip
+                    key={tag.id}
+                    label={tag.localizations[selectedLocale] ?? tag.name}
+                    size="small"
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.15)',
+                      color: 'rgba(255,255,255,0.9)',
+                      backdropFilter: 'blur(4px)',
+                      fontSize: 11,
+                      height: 22,
+                    }}
+                  />
+                ))}
+              </Box>
+            )}
 
             {/* Overview */}
             {overview && (

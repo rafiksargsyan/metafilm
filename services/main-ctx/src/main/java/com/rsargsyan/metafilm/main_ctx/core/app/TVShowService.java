@@ -3,6 +3,7 @@ package com.rsargsyan.metafilm.main_ctx.core.app;
 import com.rsargsyan.metafilm.main_ctx.Config;
 import com.rsargsyan.metafilm.main_ctx.core.Util;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.*;
+import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.Tag;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.TVShow;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.TVShowTranslation;
 import com.rsargsyan.metafilm.main_ctx.core.domain.event.TVShowSyncRequestedEvent;
@@ -60,15 +61,20 @@ public class TVShowService {
     return TVShowDTO.from(tvShowRepository.findById(tvShowId).orElseThrow(ResourceNotFoundException::new));
   }
 
+  @Transactional
   public TVShowDetailDTO getTVShowDetail(String tvShowIdStr) {
     Long tvShowId = Util.validateTSID(tvShowIdStr);
-    TVShow tvShow = tvShowRepository.findById(tvShowId).orElseThrow(ResourceNotFoundException::new);
+    TVShow tvShow = tvShowRepository.findByIdWithTags(tvShowId).orElseThrow(ResourceNotFoundException::new);
     List<TVShowTranslation> translations = tvShowTranslationRepository.findByTvShowIdWithImages(tvShowId);
+    List<TagDTO> tags = tvShow.getTags().stream()
+        .map(TagDTO::from)
+        .sorted(Comparator.comparing(TagDTO::key))
+        .toList();
     List<TVShowTranslationDTO> translationDTOs = translations.stream()
         .map(this::toTranslationDTO)
         .sorted(Comparator.comparing(t -> t.locale().name()))
         .toList();
-    return TVShowDetailDTO.from(tvShow, translationDTOs);
+    return TVShowDetailDTO.from(tvShow, tags, translationDTOs);
   }
 
   private TVShowTranslationDTO toTranslationDTO(TVShowTranslation t) {

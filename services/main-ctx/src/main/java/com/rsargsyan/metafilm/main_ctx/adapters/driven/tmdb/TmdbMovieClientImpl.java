@@ -48,6 +48,10 @@ public class TmdbMovieClientImpl implements TmdbMovieClient {
     List<ImageEntry> posters = response.images() != null ? response.images().posters() : List.of();
     List<ImageEntry> backdrops = response.images() != null ? response.images().backdrops() : List.of();
 
+    List<Integer> genreIds = response.genres() != null
+        ? response.genres().stream().map(GenreEntry::id).toList()
+        : List.of();
+
     return new TmdbMovieData(
         response.originalTitle(),
         response.overview(),
@@ -58,6 +62,7 @@ public class TmdbMovieClientImpl implements TmdbMovieClient {
         originalLocale,
         parseDate(response.releaseDate()),
         response.runtime(),
+        genreIds,
         mapTranslations(response, posters, backdrops)
     );
   }
@@ -104,8 +109,14 @@ public class TmdbMovieClientImpl implements TmdbMovieClient {
       @JsonProperty("tagline") String tagline,
       @JsonProperty("imdb_id") String imdbId,
       @JsonProperty("production_countries") List<ProductionCountry> productionCountries,
+      @JsonProperty("genres") List<GenreEntry> genres,
       @JsonProperty("translations") TranslationsWrapper translations,
       @JsonProperty("images") ImagesWrapper images
+  ) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record GenreEntry(
+      @JsonProperty("id") Integer id
   ) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)

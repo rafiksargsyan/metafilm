@@ -2,6 +2,7 @@ package com.rsargsyan.metafilm.main_ctx.core.app;
 
 import com.rsargsyan.metafilm.main_ctx.Config;
 import com.rsargsyan.metafilm.main_ctx.core.app.dto.*;
+import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.Tag;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.Movie;
 import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.MovieTranslation;
 import com.rsargsyan.metafilm.main_ctx.core.domain.event.MovieTmdbIdSetEvent;
@@ -54,13 +55,17 @@ public class MovieService {
   @Transactional
   public MovieDetailDTO getMovieDetail(String movieIdStr) {
     Long movieId = Util.validateTSID(movieIdStr);
-    Movie movie = movieRepository.findById(movieId).orElseThrow(ResourceNotFoundException::new);
+    Movie movie = movieRepository.findByIdWithTags(movieId).orElseThrow(ResourceNotFoundException::new);
     List<MovieTranslation> translations = movieTranslationRepository.findByMovieIdWithImages(movieId);
+    List<TagDTO> tags = movie.getTags().stream()
+        .map(TagDTO::from)
+        .sorted(Comparator.comparing(TagDTO::key))
+        .toList();
     List<MovieTranslationDTO> translationDTOs = translations.stream()
         .map(this::toTranslationDTO)
         .sorted(Comparator.comparing(t -> t.locale().name()))
         .toList();
-    return MovieDetailDTO.from(movie, movie.isSyncInProgress(), translationDTOs);
+    return MovieDetailDTO.from(movie, movie.isSyncInProgress(), tags, translationDTOs);
   }
 
   private MovieTranslationDTO toTranslationDTO(MovieTranslation t) {
