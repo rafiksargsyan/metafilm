@@ -7,6 +7,8 @@ import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbMovieClient;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbMovieData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbTranslationData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbVideoData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -26,6 +28,8 @@ import static com.rsargsyan.metafilm.main_ctx.adapters.driven.tmdb.TmdbLocaleRes
 
 @Component
 public class TmdbMovieClientImpl implements TmdbMovieClient {
+
+  private static final Logger log = LoggerFactory.getLogger(TmdbMovieClientImpl.class);
 
   private final RestClient restClient;
   private final String apiKey;
@@ -103,15 +107,22 @@ public class TmdbMovieClientImpl implements TmdbMovieClient {
     List<VideoEntry> allVideos = new ArrayList<>();
     Set<String> seen = new HashSet<>();
     for (int i = 0; i < langs.size(); i += 5) {
+      if (i > 0) {
+        try { Thread.sleep(250); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+      }
       String batch = String.join(",", langs.subList(i, Math.min(i + 5, langs.size())));
-      VideosResponse response = restClient.get()
-          .uri("/movie/{id}/videos?api_key={key}&include_video_language={langs}", tmdbId, apiKey, batch)
-          .retrieve()
-          .body(VideosResponse.class);
-      if (response != null && response.results() != null) {
-        for (VideoEntry v : response.results()) {
-          if (v.key() != null && seen.add(v.key())) allVideos.add(v);
+      try {
+        VideosResponse response = restClient.get()
+            .uri("/movie/{id}/videos?api_key={key}&include_video_language={langs}", tmdbId, apiKey, batch)
+            .retrieve()
+            .body(VideosResponse.class);
+        if (response != null && response.results() != null) {
+          for (VideoEntry v : response.results()) {
+            if (v.key() != null && seen.add(v.key())) allVideos.add(v);
+          }
         }
+      } catch (Exception e) {
+        log.warn("Failed to fetch videos for movie {} batch {}: {}", tmdbId, batch, e.getMessage());
       }
     }
     return selectVideosForLocales(allVideos, locales);
