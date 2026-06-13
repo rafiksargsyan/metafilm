@@ -10,5 +10,6 @@ public record MovieTranslationDTO(
     String title,
     String overview,
     String tagline,
-    List<MovieImageDTO> images
+    List<MovieImageDTO> images,
+    MovieTrailerDTO trailer
 ) {}

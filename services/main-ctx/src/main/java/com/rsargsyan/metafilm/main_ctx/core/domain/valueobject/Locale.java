@@ -62,16 +62,16 @@ public enum Locale {
   FA("fa", "fa", "Farsi"),
   AR("ar", "ar", "Arabic"),
   HE("he", "he", "Hebrew"),
-  TA("ta", null, "Tamil"),
-  TE("te", null, "Telugu"),
-  ML("ml", null, "Malayalam"),
-  UR("ur", null, "Urdu"),
-  TL("tl", null, "Filipino"),
-  BS("bs", null, "Bosnian"),
-  SQ("sq", null, "Albanian"),
-  AZ("az", null, "Azerbaijani"),
-  KA("ka", null, "Georgian"),
-  MYN("myn", null, "Mayan");
+  TA("ta", "ta", "Tamil"),
+  TE("te", "te", "Telugu"),
+  ML("ml", "ml", "Malayalam"),
+  UR("ur", "ur", "Urdu"),
+  TL("tl", "tl", "Filipino"),
+  BS("bs", "bs", "Bosnian"),
+  SQ("sq", "sq", "Albanian"),
+  AZ("az", "az", "Azerbaijani"),
+  KA("ka", "ka", "Georgian"),
+  MYN("myn", "myn", "Mayan");
 
   private final String tag;
   private final String lang;

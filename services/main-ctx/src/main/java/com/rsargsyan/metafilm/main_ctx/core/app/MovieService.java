@@ -56,7 +56,7 @@ public class MovieService {
   public MovieDetailDTO getMovieDetail(String movieIdStr) {
     Long movieId = Util.validateTSID(movieIdStr);
     Movie movie = movieRepository.findByIdWithTags(movieId).orElseThrow(ResourceNotFoundException::new);
-    List<MovieTranslation> translations = movieTranslationRepository.findByMovieIdWithImages(movieId);
+    List<MovieTranslation> translations = movieTranslationRepository.findByMovieIdWithImagesAndTrailer(movieId);
     List<TagDTO> tags = movie.getTags().stream()
         .map(TagDTO::from)
         .sorted(Comparator.comparing(TagDTO::key))
@@ -78,7 +78,10 @@ public class MovieService {
             img.getExternalPath()
         ))
         .toList();
-    return new MovieTranslationDTO(t.getStrId(), t.getLocale(), t.getTitle(), t.getOverview(), t.getTagline(), images);
+    MovieTrailerDTO trailer = t.getTrailer() != null
+        ? new MovieTrailerDTO(t.getTrailer().getSite(), t.getTrailer().getKey())
+        : null;
+    return new MovieTranslationDTO(t.getStrId(), t.getLocale(), t.getTitle(), t.getOverview(), t.getTagline(), images, trailer);
   }
 
   private String presignUrl(String s3Key) {

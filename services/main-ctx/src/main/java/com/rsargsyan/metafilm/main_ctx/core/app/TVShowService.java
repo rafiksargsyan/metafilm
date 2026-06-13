@@ -65,7 +65,7 @@ public class TVShowService {
   public TVShowDetailDTO getTVShowDetail(String tvShowIdStr) {
     Long tvShowId = Util.validateTSID(tvShowIdStr);
     TVShow tvShow = tvShowRepository.findByIdWithTags(tvShowId).orElseThrow(ResourceNotFoundException::new);
-    List<TVShowTranslation> translations = tvShowTranslationRepository.findByTvShowIdWithImages(tvShowId);
+    List<TVShowTranslation> translations = tvShowTranslationRepository.findByTvShowIdWithImagesAndTrailer(tvShowId);
     List<TagDTO> tags = tvShow.getTags().stream()
         .map(TagDTO::from)
         .sorted(Comparator.comparing(TagDTO::key))
@@ -87,7 +87,10 @@ public class TVShowService {
             img.getExternalPath()
         ))
         .toList();
-    return new TVShowTranslationDTO(t.getStrId(), t.getLocale(), t.getTitle(), t.getOverview(), t.getTagline(), images);
+    TVShowTrailerDTO trailer = t.getTrailer() != null
+        ? new TVShowTrailerDTO(t.getTrailer().getSite(), t.getTrailer().getKey())
+        : null;
+    return new TVShowTranslationDTO(t.getStrId(), t.getLocale(), t.getTitle(), t.getOverview(), t.getTagline(), images, trailer);
   }
 
   private String presignUrl(String s3Key) {
@@ -142,10 +145,10 @@ public class TVShowService {
 
   @Transactional
   public void updateFromExternal(String tvShowIdStr, String originalTitle,
-                                  LocalDate firstAirDate, LocalDate lastAirDate) {
+                                  LocalDate firstAirDate, LocalDate lastAirDate, Double voteAverage) {
     Long tvShowId = Util.validateTSID(tvShowIdStr);
     TVShow tvShow = tvShowRepository.findById(tvShowId).orElseThrow(ResourceNotFoundException::new);
-    tvShow.updateFromExternal(originalTitle, firstAirDate, lastAirDate);
+    tvShow.updateFromExternal(originalTitle, firstAirDate, lastAirDate, voteAverage);
     tvShowRepository.save(tvShow);
   }
 

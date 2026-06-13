@@ -37,6 +37,9 @@ public class Movie extends AggregateRoot {
   private String imdbId;
 
   @Getter
+  private Double voteAverage;
+
+  @Getter
   @Column(nullable = false, columnDefinition = "boolean not null default false")
   private boolean syncInProgress;
 
@@ -95,13 +98,14 @@ public class Movie extends AggregateRoot {
   }
 
   public void update(String originalTitle, Locale originalLanguage, LocalDate releaseDate,
-                     Integer runtime, Long tmdbId, String imdbId) {
+                     Integer runtime, Long tmdbId, String imdbId, Double voteAverage) {
     this.originalTitle = originalTitle;
     this.originalLanguage = originalLanguage;
     this.releaseDate = releaseDate;
     this.runtime = runtime;
     this.tmdbId = tmdbId;
     this.imdbId = imdbId;
+    this.voteAverage = voteAverage;
     touch();
   }
 }

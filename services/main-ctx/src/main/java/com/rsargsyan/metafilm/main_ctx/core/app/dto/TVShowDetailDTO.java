@@ -16,6 +16,7 @@ public record TVShowDetailDTO(
     String imdbId,
     Long tvdbId,
     boolean useTvdb,
+    Double voteAverage,
     List<TagDTO> tags,
     List<TVShowTranslationDTO> translations
 ) {
@@ -31,6 +32,7 @@ public record TVShowDetailDTO(
         tvShow.getImdbId(),
         tvShow.getTvdbId(),
         tvShow.isUseTvdb(),
+        tvShow.getVoteAverage(),
         tags,
         translations
     );

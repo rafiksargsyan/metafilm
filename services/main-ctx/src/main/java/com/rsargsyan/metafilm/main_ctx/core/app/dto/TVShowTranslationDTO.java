@@ -10,5 +10,6 @@ public record TVShowTranslationDTO(
     String title,
     String overview,
     String tagline,
-    List<TVShowImageDTO> images
+    List<TVShowImageDTO> images,
+    TVShowTrailerDTO trailer
 ) {}

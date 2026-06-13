@@ -15,4 +15,7 @@ public interface MovieTranslationRepository extends JpaRepository<MovieTranslati
 
   @Query("SELECT DISTINCT t FROM MovieTranslation t LEFT JOIN FETCH t.images WHERE t.movie.id = :movieId")
   List<MovieTranslation> findByMovieIdWithImages(@Param("movieId") Long movieId);
+
+  @Query("SELECT DISTINCT t FROM MovieTranslation t LEFT JOIN FETCH t.images LEFT JOIN FETCH t.trailer WHERE t.movie.id = :movieId")
+  List<MovieTranslation> findByMovieIdWithImagesAndTrailer(@Param("movieId") Long movieId);
 }

@@ -79,17 +79,40 @@ function TranslationRow({ t }: { t: TVShowTranslation }) {
             ? <img src={backdrop.url} alt="backdrop" style={{ height: 48, borderRadius: 4 }} />
             : <Typography color="text.secondary" variant="body2">—</Typography>}
         </TableCell>
+        <TableCell>
+          {t.trailer
+            ? <Chip label={t.trailer.site} size="small" color="info" variant="outlined" />
+            : <Typography color="text.secondary" variant="body2">—</Typography>}
+        </TableCell>
       </TableRow>
       <TableRow>
-        <TableCell colSpan={5} sx={{ p: 0, border: 0 }}>
+        <TableCell colSpan={6} sx={{ p: 0, border: 0 }}>
           <Collapse in={open} unmountOnExit>
             <Box sx={{ p: 2, bgcolor: 'action.hover' }}>
               {t.tagline && (
                 <Typography variant="body2" fontStyle="italic" sx={{ mb: 1 }}>{t.tagline}</Typography>
               )}
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ mb: t.trailer ? 2 : 0 }}>
                 {t.overview ?? 'No overview.'}
               </Typography>
+              {t.trailer && (
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>Trailer</Typography>
+                  <Box
+                    component="iframe"
+                    src={
+                      t.trailer.site === 'YouTube'
+                        ? `https://www.youtube.com/embed/${t.trailer.key}`
+                        : `https://player.vimeo.com/video/${t.trailer.key}`
+                    }
+                    width={480}
+                    height={270}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    sx={{ border: 'none', borderRadius: 1 }}
+                  />
+                </Box>
+              )}
             </Box>
           </Collapse>
         </TableCell>
@@ -243,6 +266,7 @@ export function TVShowDetailPage() {
           <DetailRow label="TMDB ID" value={tvShow.tmdbId} />
           <DetailRow label="TVDB ID" value={tvShow.tvdbId} />
           <DetailRow label="IMDB ID" value={tvShow.imdbId} />
+          <DetailRow label="TMDB Score" value={tvShow.voteAverage != null ? tvShow.voteAverage.toFixed(1) : null} />
         </Paper>
 
         <Box sx={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -351,6 +375,7 @@ export function TVShowDetailPage() {
                   <TableCell>Title</TableCell>
                   <TableCell>Poster</TableCell>
                   <TableCell>Backdrop</TableCell>
+                  <TableCell>Trailer</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

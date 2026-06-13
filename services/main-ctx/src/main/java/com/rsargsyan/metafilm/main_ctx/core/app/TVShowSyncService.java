@@ -15,7 +15,10 @@ import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalTranslationDa
 import com.rsargsyan.metafilm.main_ctx.core.ports.external.ExternalTVShowData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.repository.EpisodeRepository;
 import com.rsargsyan.metafilm.main_ctx.core.ports.repository.TVShowRepository;
+import com.rsargsyan.metafilm.main_ctx.core.domain.aggregate.TVShowTranslation;
+import com.rsargsyan.metafilm.main_ctx.core.ports.repository.TVShowTranslationRepository;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbTVShowClient;
+import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbVideoData;
 import com.rsargsyan.metafilm.main_ctx.core.app.TmdbGenreTagMapping;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tvdb.TvdbTVShowClient;
 import jakarta.transaction.Transactional;
@@ -32,13 +35,17 @@ import org.springframework.data.domain.PageRequest;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class TVShowSyncService {
 
   private final TVShowRepository tvShowRepository;
+  private final TVShowTranslationRepository tvShowTranslationRepository;
   private final TmdbTVShowClient tmdbTVShowClient;
   private final TvdbTVShowClient tvdbTVShowClient;
   private final TVShowService tvShowService;
@@ -53,6 +60,7 @@ public class TVShowSyncService {
 
   @Autowired
   public TVShowSyncService(TVShowRepository tvShowRepository,
+                           TVShowTranslationRepository tvShowTranslationRepository,
                            TmdbTVShowClient tmdbTVShowClient,
                            TvdbTVShowClient tvdbTVShowClient,
                            TVShowService tvShowService,
@@ -64,6 +72,7 @@ public class TVShowSyncService {
                            Config config,
                            @Value("${tmdb.image-base-url}") String tmdbImageBaseUrl) {
     this.tvShowRepository = tvShowRepository;
+    this.tvShowTranslationRepository = tvShowTranslationRepository;
     this.tmdbTVShowClient = tmdbTVShowClient;
     this.tvdbTVShowClient = tvdbTVShowClient;
     this.tvShowService = tvShowService;
@@ -161,7 +170,7 @@ public class TVShowSyncService {
 
     ExternalSource externalSource = tvShow.isUseTvdb() ? ExternalSource.TVDB : ExternalSource.TMDB;
 
-    tvShowService.updateFromExternal(tvShowIdStr, data.originalTitle(), data.firstAirDate(), data.lastAirDate());
+    tvShowService.updateFromExternal(tvShowIdStr, data.originalTitle(), data.firstAirDate(), data.lastAirDate(), data.voteAverage());
 
     List<String> tagKeys = data.genreIds().stream()
         .map(TmdbGenreTagMapping.TV_GENRES::get)
@@ -183,6 +192,31 @@ public class TVShowSyncService {
     }
 
     Locale tvShowLocale = tvShow.getOriginalLanguage();
+
+    // Sync trailers from TMDB (always, even when useTvdb=true, as long as tmdbId is set)
+    if (tvShow.getTmdbId() != null) {
+      try {
+        Set<Locale> translationLocales = tvShowTranslationRepository.findByTvShowId(tvShowId).stream()
+            .map(TVShowTranslation::getLocale)
+            .collect(Collectors.toSet());
+        Map<Locale, TmdbVideoData> videosByLocale =
+            tmdbTVShowClient.fetchTVShowVideos(tvShow.getTmdbId(), translationLocales);
+        for (Map.Entry<Locale, TmdbVideoData> entry : videosByLocale.entrySet()) {
+          try {
+            TVShowTranslation t = tvShowTranslationRepository
+                .findByTvShowIdAndLocale(tvShowId, entry.getKey())
+                .orElseThrow();
+            t.upsertTrailer(entry.getValue().site(), entry.getValue().key());
+            tvShowTranslationRepository.save(t);
+          } catch (Exception e) {
+            log.error("Failed to upsert trailer for locale {} of tvShow {}", entry.getKey(), tvShowIdStr, e);
+          }
+        }
+      } catch (Exception e) {
+        log.error("Failed to sync trailers for tvShow {}", tvShowIdStr, e);
+      }
+    }
+
     boolean covered = data.translations().stream().anyMatch(t -> t.locale().equals(tvShowLocale));
     if (!covered) {
       try {

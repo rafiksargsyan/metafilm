@@ -168,10 +168,15 @@ function TranslationRow({ translation }: { translation: MovieTranslation }) {
         <TableCell>
           <Chip label={translation.images.length} size="small" color={translation.images.length > 0 ? 'success' : 'default'} variant="outlined" />
         </TableCell>
+        <TableCell>
+          {translation.trailer
+            ? <Chip label={translation.trailer.site} size="small" color="info" variant="outlined" />
+            : <Typography color="text.disabled" fontSize={14}>—</Typography>}
+        </TableCell>
       </TableRow>
       {expanded && (
         <TableRow>
-          <TableCell colSpan={5} sx={{ bgcolor: 'action.hover', px: 3, py: 2 }}>
+          <TableCell colSpan={6} sx={{ bgcolor: 'action.hover', px: 3, py: 2 }}>
             <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
               {translation.tagline && (
                 <Box sx={{ flexBasis: '100%' }}>
@@ -183,6 +188,24 @@ function TranslationRow({ translation }: { translation: MovieTranslation }) {
                 <Box sx={{ flexBasis: '100%' }}>
                   <Typography variant="caption" color="text.secondary">Overview</Typography>
                   <Typography variant="body2">{translation.overview}</Typography>
+                </Box>
+              )}
+              {translation.trailer && (
+                <Box sx={{ flexBasis: '100%' }}>
+                  <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>Trailer</Typography>
+                  <Box
+                    component="iframe"
+                    src={
+                      translation.trailer.site === 'YouTube'
+                        ? `https://www.youtube.com/embed/${translation.trailer.key}`
+                        : `https://player.vimeo.com/video/${translation.trailer.key}`
+                    }
+                    width={480}
+                    height={270}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    sx={{ border: 'none', borderRadius: 1 }}
+                  />
                 </Box>
               )}
               {translation.images.length > 0 ? (
@@ -322,6 +345,7 @@ export function MovieDetailPage() {
           <DetailRow label="Runtime" value={movie.runtime != null ? `${movie.runtime} min` : null} />
           <DetailRow label="TMDB ID" value={movie.tmdbId} />
           <DetailRow label="IMDB ID" value={movie.imdbId} />
+          <DetailRow label="TMDB Score" value={movie.voteAverage != null ? movie.voteAverage.toFixed(1) : null} />
         </Paper>
 
         <Box sx={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -405,6 +429,7 @@ export function MovieDetailPage() {
                 <TableCell>Title</TableCell>
                 <TableCell>Overview</TableCell>
                 <TableCell>Images</TableCell>
+                <TableCell>Trailer</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

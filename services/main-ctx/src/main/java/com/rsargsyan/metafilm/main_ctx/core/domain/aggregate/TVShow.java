@@ -41,6 +41,9 @@ public class TVShow extends AggregateRoot {
   private Long tvdbId;
 
   @Getter
+  private Double voteAverage;
+
+  @Getter
   @Column(nullable = false)
   private boolean useTvdb = false;
 
@@ -95,10 +98,12 @@ public class TVShow extends AggregateRoot {
     touch();
   }
 
-  public void updateFromExternal(String originalTitle, LocalDate firstAirDate, LocalDate lastAirDate) {
+  public void updateFromExternal(String originalTitle, LocalDate firstAirDate, LocalDate lastAirDate,
+                                 Double voteAverage) {
     this.originalTitle = originalTitle;
     this.firstAirDate = firstAirDate;
     this.lastAirDate = lastAirDate;
+    this.voteAverage = voteAverage;
     touch();
   }
 

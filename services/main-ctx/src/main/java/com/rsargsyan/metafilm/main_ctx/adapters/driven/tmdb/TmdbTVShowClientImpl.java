@@ -5,13 +5,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.Locale;
 import com.rsargsyan.metafilm.main_ctx.core.ports.external.*;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbTVShowClient;
+import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbVideoData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.rsargsyan.metafilm.main_ctx.adapters.driven.tmdb.TmdbLocaleResolver.*;
 
@@ -67,6 +75,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
         originalLocale,
         parseDate(response.firstAirDate()),
         parseDate(response.lastAirDate()),
+        response.voteAverage(),
         genreIds,
         translations,
         seasons
@@ -129,6 +138,55 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
         e.stillPath(),
         translations
     );
+  }
+
+  @Override
+  public Map<Locale, TmdbVideoData> fetchTVShowVideos(Long tmdbId, Set<Locale> locales) {
+    List<String> langs = locales.stream().map(Locale::getLang).distinct().collect(Collectors.toList());
+    List<VideoEntry> allVideos = new ArrayList<>();
+    Set<String> seen = new HashSet<>();
+    for (int i = 0; i < langs.size(); i += 5) {
+      String batch = String.join(",", langs.subList(i, Math.min(i + 5, langs.size())));
+      VideosResponse response = restClient.get()
+          .uri("/tv/{id}/videos?api_key={key}&include_video_language={langs}", tmdbId, apiKey, batch)
+          .retrieve()
+          .body(VideosResponse.class);
+      if (response != null && response.results() != null) {
+        for (VideoEntry v : response.results()) {
+          if (v.key() != null && seen.add(v.key())) allVideos.add(v);
+        }
+      }
+    }
+    return selectVideosForLocales(allVideos, locales);
+  }
+
+  private Map<Locale, TmdbVideoData> selectVideosForLocales(List<VideoEntry> videos, Set<Locale> locales) {
+    Map<Locale, TmdbVideoData> result = new HashMap<>();
+    for (Locale locale : locales) {
+      selectBestVideo(videos, locale).ifPresent(v -> result.put(locale, new TmdbVideoData(v.site(), v.key())));
+    }
+    return result;
+  }
+
+  private Optional<VideoEntry> selectBestVideo(List<VideoEntry> videos, Locale locale) {
+    String lang = locale.getLang();
+    boolean localeHasCountry = locale.getTag().contains("-");
+    return videos.stream()
+        .filter(v -> videoMatchesLocale(v, lang, localeHasCountry, locale))
+        .max(Comparator
+            .comparingInt((VideoEntry v) -> v.official() ? 1 : 0)
+            .thenComparingInt(v -> "Trailer".equals(v.type()) ? 1 : 0)
+            .thenComparing(v -> v.publishedAt() != null ? v.publishedAt() : ""));
+  }
+
+  private boolean videoMatchesLocale(VideoEntry v, String lang, boolean localeHasCountry, Locale locale) {
+    if (v.languageCode() == null || v.languageCode().isBlank()) return false;
+    if (!v.languageCode().equalsIgnoreCase(lang)) return false;
+    String vCountry = (v.countryCode() != null && !v.countryCode().isBlank()) ? v.countryCode() : null;
+    if (vCountry != null && localeHasCountry) {
+      return resolveLocale(v.languageCode(), v.countryCode()).map(l -> l == locale).orElse(false);
+    }
+    return true;
   }
 
   @Override
@@ -197,11 +255,28 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
       @JsonProperty("tagline") String tagline,
       @JsonProperty("poster_path") String posterPath,
       @JsonProperty("backdrop_path") String backdropPath,
+      @JsonProperty("vote_average") Double voteAverage,
       @JsonProperty("origin_country") List<String> originCountry,
       @JsonProperty("genres") List<GenreEntry> genres,
       @JsonProperty("seasons") List<SeasonEntry> seasons,
       @JsonProperty("translations") TranslationsWrapper translations,
       @JsonProperty("images") ImagesWrapper images
+  ) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record VideosResponse(
+      @JsonProperty("results") List<VideoEntry> results
+  ) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record VideoEntry(
+      @JsonProperty("key") String key,
+      @JsonProperty("site") String site,
+      @JsonProperty("type") String type,
+      @JsonProperty("official") boolean official,
+      @JsonProperty("iso_639_1") String languageCode,
+      @JsonProperty("iso_3166_1") String countryCode,
+      @JsonProperty("published_at") String publishedAt
   ) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)

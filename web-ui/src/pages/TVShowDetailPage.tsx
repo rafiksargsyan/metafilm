@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
+  Button,
+  Dialog,
+  DialogContent,
   Typography,
   Select,
   MenuItem,
@@ -21,6 +24,8 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import LanguageIcon from '@mui/icons-material/Language';
+import StarIcon from '@mui/icons-material/Star';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import { decode } from 'blurhash';
 import { useAuth } from '../hooks/useAuth';
 import { getTVShow, listSeasons } from '../api/tvshows';
@@ -110,6 +115,7 @@ export function TVShowDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLocale, setSelectedLocale] = useState<string>('');
+  const [trailerOpen, setTrailerOpen] = useState(false);
 
   useEffect(() => {
     if (!user || !accountId || !id) return;
@@ -139,6 +145,7 @@ export function TVShowDetailPage() {
   const translation = tvShow.translations.find((t) => t.locale === selectedLocale) ?? null;
   const backdrop = getImage(translation, 'BACKDROP');
   const poster = getImage(translation, 'POSTER');
+  const trailer = translation?.trailer ?? null;
 
   const title = translation?.title || tvShow.originalTitle;
   const overview = translation?.overview ?? null;
@@ -320,7 +327,32 @@ export function TVShowDetailPage() {
                   sx={{ bgcolor: '#01b4e4', color: 'white', fontWeight: 'bold', fontSize: 11, height: 22 }}
                 />
               )}
+              {tvShow.voteAverage != null && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#f5c518' }}>
+                  <StarIcon sx={{ fontSize: 15 }} />
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+                    {tvShow.voteAverage.toFixed(1)}
+                  </Typography>
+                </Box>
+              )}
             </Box>
+
+            {trailer && (
+              <Box sx={{ mb: 2 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<PlayCircleIcon />}
+                  onClick={() => setTrailerOpen(true)}
+                  sx={{
+                    color: 'white',
+                    borderColor: 'rgba(255,255,255,0.5)',
+                    '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' },
+                  }}
+                >
+                  Watch Trailer
+                </Button>
+              </Box>
+            )}
 
             {/* Genre tags */}
             {tvShow.tags.length > 0 && (
@@ -362,6 +394,30 @@ export function TVShowDetailPage() {
           </Box>
         </Box>
       </Box>
+
+      {trailer && (
+        <Dialog
+          open={trailerOpen}
+          onClose={() => setTrailerOpen(false)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{ sx: { bgcolor: 'black', m: 1 } }}
+        >
+          <DialogContent sx={{ p: 0, aspectRatio: '16/9', position: 'relative' }}>
+            <Box
+              component="iframe"
+              src={
+                trailer.site === 'YouTube'
+                  ? `https://www.youtube.com/embed/${trailer.key}?autoplay=1`
+                  : `https://player.vimeo.com/video/${trailer.key}?autoplay=1`
+              }
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              sx={{ border: 'none', width: '100%', height: '100%', display: 'block' }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Box sx={{ px: { xs: 3, md: 6 }, py: 4 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>

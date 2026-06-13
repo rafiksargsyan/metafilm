@@ -26,6 +26,11 @@ export interface MovieImage {
   externalPath: string | null;
 }
 
+export interface MovieTrailer {
+  site: string;
+  key: string;
+}
+
 export interface MovieTranslation {
   id: string;
   locale: string;
@@ -33,6 +38,7 @@ export interface MovieTranslation {
   overview: string | null;
   tagline: string | null;
   images: MovieImage[];
+  trailer: MovieTrailer | null;
 }
 
 export interface Tag {
@@ -43,6 +49,7 @@ export interface Tag {
 }
 
 export interface MovieDetail extends Movie {
+  voteAverage: number | null;
   syncInProgress: boolean;
   tags: Tag[];
   translations: MovieTranslation[];
@@ -68,6 +75,11 @@ export interface TVShowImage {
   externalPath: string | null;
 }
 
+export interface TVShowTrailer {
+  site: string;
+  key: string;
+}
+
 export interface TVShowTranslation {
   id: string;
   locale: string;
@@ -75,9 +87,11 @@ export interface TVShowTranslation {
   overview: string | null;
   tagline: string | null;
   images: TVShowImage[];
+  trailer: TVShowTrailer | null;
 }
 
 export interface TVShowDetail extends TVShow {
+  voteAverage: number | null;
   tags: Tag[];
   translations: TVShowTranslation[];
 }

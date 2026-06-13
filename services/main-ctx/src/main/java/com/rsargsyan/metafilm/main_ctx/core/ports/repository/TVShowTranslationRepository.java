@@ -15,4 +15,7 @@ public interface TVShowTranslationRepository extends JpaRepository<TVShowTransla
 
   @Query("SELECT DISTINCT t FROM TVShowTranslation t LEFT JOIN FETCH t.images WHERE t.tvShow.id = :tvShowId")
   List<TVShowTranslation> findByTvShowIdWithImages(@Param("tvShowId") Long tvShowId);
+
+  @Query("SELECT DISTINCT t FROM TVShowTranslation t LEFT JOIN FETCH t.images LEFT JOIN FETCH t.trailer WHERE t.tvShow.id = :tvShowId")
+  List<TVShowTranslation> findByTvShowIdWithImagesAndTrailer(@Param("tvShowId") Long tvShowId);
 }

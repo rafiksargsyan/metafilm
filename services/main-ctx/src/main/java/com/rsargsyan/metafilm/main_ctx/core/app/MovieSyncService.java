@@ -16,6 +16,7 @@ import com.rsargsyan.metafilm.main_ctx.core.exception.ResourceNotFoundException;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbMovieClient;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbMovieData;
 import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbTranslationData;
+import com.rsargsyan.metafilm.main_ctx.core.ports.tmdb.TmdbVideoData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,10 @@ import org.springframework.data.domain.PageRequest;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -111,7 +115,8 @@ public class MovieSyncService {
         data.releaseDate(),
         data.runtime(),
         movie.getTmdbId(),
-        data.imdbId()
+        data.imdbId(),
+        data.voteAverage()
     );
     movieRepository.save(movie);
 
@@ -132,6 +137,28 @@ public class MovieSyncService {
       tagService.syncMovieTags(movieId, tagKeys);
     } catch (Exception e) {
       log.error("Failed to sync tags for movie {}", movieIdStr, e);
+    }
+
+    // Sync trailers from TMDB
+    try {
+      Set<Locale> translationLocales = movieTranslationRepository.findByMovieId(movieId).stream()
+          .map(MovieTranslation::getLocale)
+          .collect(Collectors.toSet());
+      Map<Locale, TmdbVideoData> videosByLocale =
+          tmdbMovieClient.fetchMovieVideos(movie.getTmdbId(), translationLocales);
+      for (Map.Entry<Locale, TmdbVideoData> entry : videosByLocale.entrySet()) {
+        try {
+          MovieTranslation t = movieTranslationRepository
+              .findByMovieIdAndLocale(movieId, entry.getKey())
+              .orElseThrow();
+          t.upsertTrailer(entry.getValue().site(), entry.getValue().key());
+          movieTranslationRepository.save(t);
+        } catch (Exception e) {
+          log.error("Failed to upsert trailer for locale {} of movie {}", entry.getKey(), movieIdStr, e);
+        }
+      }
+    } catch (Exception e) {
+      log.error("Failed to sync trailers for movie {}", movieIdStr, e);
     }
 
     // Always ensure the movie's stored original language has a translation entry.

@@ -1,6 +1,7 @@
 package com.rsargsyan.metafilm.main_ctx.core.domain.aggregate;
 
 import com.rsargsyan.metafilm.main_ctx.core.domain.localentity.TVShowImage;
+import com.rsargsyan.metafilm.main_ctx.core.domain.localentity.TVShowTrailer;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ExternalSource;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.ImageType;
 import com.rsargsyan.metafilm.main_ctx.core.domain.valueobject.Locale;
@@ -41,6 +42,10 @@ public class TVShowTranslation extends AggregateRoot {
   @OneToMany(mappedBy = "translation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private List<TVShowImage> images = new ArrayList<>();
 
+  @Getter
+  @OneToOne(mappedBy = "translation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  private TVShowTrailer trailer;
+
   @SuppressWarnings("unused")
   TVShowTranslation() {}
 
@@ -76,6 +81,15 @@ public class TVShowTranslation extends AggregateRoot {
             img -> img.updatePath(path, externalSource, externalPath, blurhash),
             () -> images.add(new TVShowImage(this, type, path, externalSource, externalPath, blurhash))
         );
+    touch();
+  }
+
+  public void upsertTrailer(String site, String key) {
+    if (trailer != null) {
+      trailer.update(site, key);
+    } else {
+      trailer = new TVShowTrailer(this, site, key);
+    }
     touch();
   }
 }

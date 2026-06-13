@@ -14,6 +14,7 @@ public record MovieDetailDTO(
     Integer runtime,
     Long tmdbId,
     String imdbId,
+    Double voteAverage,
     boolean syncInProgress,
     List<TagDTO> tags,
     List<MovieTranslationDTO> translations
@@ -29,6 +30,7 @@ public record MovieDetailDTO(
         movie.getRuntime(),
         movie.getTmdbId(),
         movie.getImdbId(),
+        movie.getVoteAverage(),
         syncInProgress,
         tags,
         translations
