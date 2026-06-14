@@ -217,7 +217,8 @@ public class TVShowSyncService {
       }
     }
 
-    boolean covered = data.translations().stream().anyMatch(t -> t.locale().equals(tvShowLocale));
+    boolean covered = data.translations().stream()
+        .anyMatch(t -> t.locale().equals(tvShowLocale) && t.title() != null && !t.title().isBlank());
     if (!covered) {
       try {
         syncTVShowTranslation(tvShowIdStr, new ExternalTranslationData(
