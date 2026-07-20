@@ -6,6 +6,7 @@ import java.util.List;
 public record ExternalSeasonData(
     Integer seasonNumber,
     String originalName,
+    String originalOverview,
     LocalDate airDate,
     List<ExternalTranslationData> translations,
     List<ExternalEpisodeData> episodes

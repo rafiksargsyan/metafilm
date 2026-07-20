@@ -121,6 +121,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
     return new ExternalSeasonData(
         season.seasonNumber(),
         season.name(),
+        season.overview(),
         parseDate(season.airDate()),
         translations,
         episodes
@@ -306,6 +307,7 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
   record SeasonResponse(
       @JsonProperty("season_number") Integer seasonNumber,
       @JsonProperty("name") String name,
+      @JsonProperty("overview") String overview,
       @JsonProperty("air_date") String airDate,
       @JsonProperty("episodes") List<EpisodeEntry> episodes,
       @JsonProperty("translations") TranslationsWrapper translations,

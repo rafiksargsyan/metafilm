@@ -83,7 +83,7 @@ public class TVShowSyncService {
     this.s3Client = s3Client;
     this.s3Bucket = config.s3Bucket;
     this.tmdbImageBaseUrl = tmdbImageBaseUrl;
-    this.imageDownloadClient = RestClient.create();
+    this.imageDownloadClient = RestClient.builder().build();
   }
 
   public void syncAll() {
@@ -236,11 +236,12 @@ public class TVShowSyncService {
 
     for (ExternalSeasonData season : data.seasons()) {
       try {
-        syncSeason(tvShowIdStr, season, externalSource);
+        syncSeason(tvShowIdStr, season, externalSource, tvShowLocale);
       } catch (Exception e) {
         log.error("Failed to sync season {} for tvShow {}", season.seasonNumber(), tvShowIdStr, e);
       }
     }
+    log.info("Sync completed for tvShow {}", tvShowIdStr);
   }
 
   private void syncTVShowTranslation(String tvShowIdStr, ExternalTranslationData t,
@@ -264,7 +265,8 @@ public class TVShowSyncService {
     }
   }
 
-  private void syncSeason(String tvShowIdStr, ExternalSeasonData season, ExternalSource externalSource) {
+  private void syncSeason(String tvShowIdStr, ExternalSeasonData season, ExternalSource externalSource,
+                           Locale originalLocale) {
     String seasonIdStr = seasonService.upsertSeason(
         tvShowIdStr, season.seasonNumber(), season.originalName(), season.airDate());
 
@@ -281,6 +283,18 @@ public class TVShowSyncService {
         }
       } catch (Exception e) {
         log.error("Failed to sync translation {} for season {} of tvShow {}", t.locale(), season.seasonNumber(), tvShowIdStr, e);
+      }
+    }
+
+    boolean covered = season.translations().stream()
+        .anyMatch(t -> t.locale().equals(originalLocale)
+            && t.title() != null && !t.title().isBlank()
+            && t.overview() != null && !t.overview().isBlank());
+    if (!covered) {
+      try {
+        seasonService.upsertTranslation(seasonIdStr, originalLocale, season.originalName(), season.originalOverview());
+      } catch (Exception e) {
+        log.error("Failed to sync original-locale translation {} for season {} of tvShow {}", originalLocale, season.seasonNumber(), tvShowIdStr, e);
       }
     }
 

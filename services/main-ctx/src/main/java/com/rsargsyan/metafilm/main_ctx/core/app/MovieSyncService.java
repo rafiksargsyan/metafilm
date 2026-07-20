@@ -65,7 +65,7 @@ public class MovieSyncService {
     this.s3Client = s3Client;
     this.s3Bucket = config.s3Bucket;
     this.tmdbImageBaseUrl = tmdbImageBaseUrl;
-    this.imageDownloadClient = RestClient.create();
+    this.imageDownloadClient = RestClient.builder().build();
   }
 
   public void syncAll() {
