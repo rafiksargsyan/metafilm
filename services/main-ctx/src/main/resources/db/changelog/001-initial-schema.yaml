@@ -1,0 +1,287 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-initial-schema
+      author: rsargsyan
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE account (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  PRIMARY KEY (id)
+              );
+
+              CREATE TABLE principal (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  external_id VARCHAR(255),
+                  full_name VARCHAR(127),
+                  PRIMARY KEY (id),
+                  UNIQUE (external_id)
+              );
+
+              CREATE TABLE user_profile (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  account_id BIGINT NOT NULL,
+                  principal_id BIGINT NOT NULL,
+                  full_name VARCHAR(127) NOT NULL,
+                  PRIMARY KEY (id),
+                  CONSTRAINT fk_user_profile_account FOREIGN KEY (account_id) REFERENCES account (id),
+                  CONSTRAINT fk_user_profile_principal FOREIGN KEY (principal_id) REFERENCES principal (id)
+              );
+
+              CREATE TABLE api_key (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  account_id BIGINT NOT NULL,
+                  hashed_key VARCHAR(255) NOT NULL,
+                  user_profile_id BIGINT NOT NULL,
+                  disabled BOOLEAN NOT NULL DEFAULT FALSE,
+                  last_access_time TIMESTAMPTZ,
+                  description VARCHAR(127),
+                  PRIMARY KEY (id),
+                  UNIQUE (hashed_key),
+                  CONSTRAINT fk_api_key_account FOREIGN KEY (account_id) REFERENCES account (id),
+                  CONSTRAINT fk_api_key_user_profile FOREIGN KEY (user_profile_id) REFERENCES user_profile (id)
+              );
+
+              CREATE TABLE tag (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  tag_key VARCHAR(64) NOT NULL,
+                  name VARCHAR(255) NOT NULL,
+                  localizations JSONB NOT NULL DEFAULT '{}',
+                  PRIMARY KEY (id),
+                  UNIQUE (tag_key)
+              );
+
+              CREATE TABLE movie (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  original_title VARCHAR(255) NOT NULL,
+                  original_language VARCHAR(20) NOT NULL,
+                  release_date DATE,
+                  runtime INTEGER,
+                  tmdb_id BIGINT,
+                  imdb_id VARCHAR(255),
+                  vote_average DOUBLE PRECISION,
+                  sync_in_progress BOOLEAN NOT NULL DEFAULT FALSE,
+                  sync_started_at TIMESTAMPTZ,
+                  PRIMARY KEY (id),
+                  UNIQUE (tmdb_id),
+                  UNIQUE (imdb_id)
+              );
+
+              CREATE TABLE tvshow (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  original_title VARCHAR(255) NOT NULL,
+                  original_language VARCHAR(20) NOT NULL,
+                  first_air_date DATE,
+                  last_air_date DATE,
+                  tmdb_id BIGINT,
+                  imdb_id VARCHAR(255),
+                  tvdb_id BIGINT,
+                  vote_average DOUBLE PRECISION,
+                  use_tvdb BOOLEAN NOT NULL DEFAULT FALSE,
+                  PRIMARY KEY (id),
+                  UNIQUE (tmdb_id),
+                  UNIQUE (imdb_id),
+                  UNIQUE (tvdb_id)
+              );
+
+              CREATE TABLE movie_tag (
+                  movie_id BIGINT NOT NULL,
+                  tag_id BIGINT NOT NULL,
+                  PRIMARY KEY (movie_id, tag_id),
+                  CONSTRAINT fk_movie_tag_movie FOREIGN KEY (movie_id) REFERENCES movie (id),
+                  CONSTRAINT fk_movie_tag_tag FOREIGN KEY (tag_id) REFERENCES tag (id)
+              );
+
+              CREATE TABLE tvshow_tag (
+                  tvshow_id BIGINT NOT NULL,
+                  tag_id BIGINT NOT NULL,
+                  PRIMARY KEY (tvshow_id, tag_id),
+                  CONSTRAINT fk_tvshow_tag_tvshow FOREIGN KEY (tvshow_id) REFERENCES tvshow (id),
+                  CONSTRAINT fk_tvshow_tag_tag FOREIGN KEY (tag_id) REFERENCES tag (id)
+              );
+
+              CREATE TABLE season (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  tvshow_id BIGINT NOT NULL,
+                  season_number INTEGER NOT NULL,
+                  original_name VARCHAR(255),
+                  air_date DATE,
+                  PRIMARY KEY (id),
+                  UNIQUE (tvshow_id, season_number),
+                  CONSTRAINT fk_season_tvshow FOREIGN KEY (tvshow_id) REFERENCES tvshow (id)
+              );
+
+              CREATE TABLE episode (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  tvshow_id BIGINT NOT NULL,
+                  season_number INTEGER,
+                  episode_number INTEGER,
+                  absolute_number INTEGER,
+                  air_date DATE,
+                  runtime INTEGER,
+                  PRIMARY KEY (id),
+                  CONSTRAINT fk_episode_tvshow FOREIGN KEY (tvshow_id) REFERENCES tvshow (id)
+              );
+
+              CREATE TABLE movie_translation (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  movie_id BIGINT NOT NULL,
+                  locale VARCHAR(20) NOT NULL,
+                  title VARCHAR(255),
+                  overview TEXT,
+                  tagline VARCHAR(255),
+                  PRIMARY KEY (id),
+                  UNIQUE (movie_id, locale),
+                  CONSTRAINT fk_movie_translation_movie FOREIGN KEY (movie_id) REFERENCES movie (id)
+              );
+
+              CREATE TABLE tvshow_translation (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  tvshow_id BIGINT NOT NULL,
+                  locale VARCHAR(20) NOT NULL,
+                  title VARCHAR(255),
+                  overview TEXT,
+                  tagline VARCHAR(255),
+                  PRIMARY KEY (id),
+                  UNIQUE (tvshow_id, locale),
+                  CONSTRAINT fk_tvshow_translation_tvshow FOREIGN KEY (tvshow_id) REFERENCES tvshow (id)
+              );
+
+              CREATE TABLE season_translation (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  season_id BIGINT NOT NULL,
+                  locale VARCHAR(20) NOT NULL,
+                  title VARCHAR(255),
+                  overview TEXT,
+                  PRIMARY KEY (id),
+                  UNIQUE (season_id, locale),
+                  CONSTRAINT fk_season_translation_season FOREIGN KEY (season_id) REFERENCES season (id)
+              );
+
+              CREATE TABLE episode_translation (
+                  id BIGINT NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  episode_id BIGINT NOT NULL,
+                  locale VARCHAR(20) NOT NULL,
+                  title VARCHAR(255),
+                  overview TEXT,
+                  PRIMARY KEY (id),
+                  UNIQUE (episode_id, locale),
+                  CONSTRAINT fk_episode_translation_episode FOREIGN KEY (episode_id) REFERENCES episode (id)
+              );
+
+              CREATE TABLE movie_image (
+                  translation_id BIGINT NOT NULL,
+                  type VARCHAR(20) NOT NULL,
+                  path VARCHAR(255) NOT NULL,
+                  external_source VARCHAR(20),
+                  external_path VARCHAR(255),
+                  blurhash VARCHAR(255),
+                  PRIMARY KEY (translation_id, type),
+                  CONSTRAINT fk_movie_image_translation FOREIGN KEY (translation_id) REFERENCES movie_translation (id)
+              );
+
+              CREATE TABLE tvshow_image (
+                  translation_id BIGINT NOT NULL,
+                  type VARCHAR(20) NOT NULL,
+                  path VARCHAR(255) NOT NULL,
+                  external_source VARCHAR(20),
+                  external_path VARCHAR(255),
+                  blurhash VARCHAR(255),
+                  PRIMARY KEY (translation_id, type),
+                  CONSTRAINT fk_tvshow_image_translation FOREIGN KEY (translation_id) REFERENCES tvshow_translation (id)
+              );
+
+              CREATE TABLE season_image (
+                  translation_id BIGINT NOT NULL,
+                  type VARCHAR(20) NOT NULL,
+                  path VARCHAR(255) NOT NULL,
+                  external_source VARCHAR(20),
+                  external_path VARCHAR(255),
+                  blurhash VARCHAR(255),
+                  PRIMARY KEY (translation_id, type),
+                  CONSTRAINT fk_season_image_translation FOREIGN KEY (translation_id) REFERENCES season_translation (id)
+              );
+
+              CREATE TABLE episode_image (
+                  translation_id BIGINT NOT NULL,
+                  type VARCHAR(20) NOT NULL,
+                  path VARCHAR(255) NOT NULL,
+                  external_source VARCHAR(20),
+                  external_path VARCHAR(255),
+                  blurhash VARCHAR(255),
+                  PRIMARY KEY (translation_id, type),
+                  CONSTRAINT fk_episode_image_translation FOREIGN KEY (translation_id) REFERENCES episode_translation (id)
+              );
+
+              CREATE TABLE movie_trailer (
+                  translation_id BIGINT NOT NULL,
+                  site VARCHAR(255) NOT NULL,
+                  key VARCHAR(255) NOT NULL,
+                  PRIMARY KEY (translation_id),
+                  CONSTRAINT fk_movie_trailer_translation FOREIGN KEY (translation_id) REFERENCES movie_translation (id)
+              );
+
+              CREATE TABLE tvshow_trailer (
+                  translation_id BIGINT NOT NULL,
+                  site VARCHAR(255) NOT NULL,
+                  key VARCHAR(255) NOT NULL,
+                  PRIMARY KEY (translation_id),
+                  CONSTRAINT fk_tvshow_trailer_translation FOREIGN KEY (translation_id) REFERENCES tvshow_translation (id)
+              );
+
+              CREATE TABLE scheduled_tasks (
+                  task_name TEXT NOT NULL,
+                  task_instance TEXT NOT NULL,
+                  task_data BYTEA,
+                  execution_time TIMESTAMPTZ NOT NULL,
+                  picked BOOLEAN NOT NULL,
+                  picked_by TEXT,
+                  last_success TIMESTAMPTZ,
+                  last_failure TIMESTAMPTZ,
+                  consecutive_failures INTEGER,
+                  last_failure_cause TEXT,
+                  last_heartbeat TIMESTAMPTZ,
+                  version BIGINT NOT NULL,
+                  PRIMARY KEY (task_name, task_instance)
+              );
