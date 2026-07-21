@@ -10,6 +10,7 @@ import java.util.Set;
 
 public interface TmdbTVShowClient {
   ExternalTVShowData fetchTVShow(Long tmdbId);
+  List<Integer> fetchTVShowGenreIds(Long tmdbId);
   List<ExternalTranslationData> fetchEpisodeTranslations(Long tvShowTmdbId, Integer seasonNumber, Integer episodeNumber);
   Map<Locale, TmdbVideoData> fetchTVShowVideos(Long tmdbId, Set<Locale> locales);
 }

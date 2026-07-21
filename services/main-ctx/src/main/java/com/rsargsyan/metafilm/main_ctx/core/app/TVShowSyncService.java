@@ -172,7 +172,15 @@ public class TVShowSyncService {
 
     tvShowService.updateFromExternal(tvShowIdStr, data.originalTitle(), data.firstAirDate(), data.lastAirDate(), data.voteAverage());
 
-    List<String> tagKeys = data.genreIds().stream()
+    List<Integer> genreIds = List.of();
+    if (tvShow.getTmdbId() != null) {
+      try {
+        genreIds = tmdbTVShowClient.fetchTVShowGenreIds(tvShow.getTmdbId());
+      } catch (Exception e) {
+        log.warn("Failed to fetch TMDB genre IDs for tvShow {}", tvShowIdStr, e);
+      }
+    }
+    List<String> tagKeys = genreIds.stream()
         .map(TmdbGenreTagMapping.TV_GENRES::get)
         .filter(Objects::nonNull)
         .distinct()
@@ -343,8 +351,9 @@ public class TVShowSyncService {
 
   private UploadResult uploadImage(String s3KeyBase, String externalPath) {
     try {
+      String imageUrl = externalPath.startsWith("http") ? externalPath : tmdbImageBaseUrl + externalPath;
       byte[] imageBytes = imageDownloadClient.get()
-          .uri(URI.create(tmdbImageBaseUrl + externalPath))
+          .uri(URI.create(imageUrl))
           .retrieve()
           .body(byte[].class);
       if (imageBytes == null) return null;

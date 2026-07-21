@@ -146,6 +146,16 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
   }
 
   @Override
+  public List<Integer> fetchTVShowGenreIds(Long tmdbId) {
+    TVShowResponse response = restClient.get()
+        .uri("/tv/{id}?api_key={key}", tmdbId, apiKey)
+        .retrieve()
+        .body(TVShowResponse.class);
+    if (response == null || response.genres() == null) return List.of();
+    return response.genres().stream().map(GenreEntry::id).toList();
+  }
+
+  @Override
   public Map<Locale, TmdbVideoData> fetchTVShowVideos(Long tmdbId, Set<Locale> locales) {
     List<String> langs = locales.stream().map(Locale::getLang).distinct().collect(Collectors.toList());
     List<VideoEntry> allVideos = new ArrayList<>();
