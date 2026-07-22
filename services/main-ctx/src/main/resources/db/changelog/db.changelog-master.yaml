@@ -8,3 +8,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/004-movie-title-release-date-unique.yaml
       relativeToChangelogFile: false
+  - include:
+      file: db/changelog/005-tvshow-title-first-air-date-unique.yaml
+      relativeToChangelogFile: false

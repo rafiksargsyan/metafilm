@@ -170,7 +170,16 @@ public class TVShowSyncService {
 
     ExternalSource externalSource = tvShow.isUseTvdb() ? ExternalSource.TVDB : ExternalSource.TMDB;
 
-    tvShowService.updateFromExternal(tvShowIdStr, data.originalTitle(), data.firstAirDate(), data.lastAirDate(), data.voteAverage());
+    Double voteAverage = data.voteAverage();
+    if (tvShow.isUseTvdb() && tvShow.getTmdbId() != null) {
+      try {
+        Double tmdbVoteAverage = tmdbTVShowClient.fetchVoteAverage(tvShow.getTmdbId());
+        if (tmdbVoteAverage != null) voteAverage = tmdbVoteAverage;
+      } catch (Exception e) {
+        log.warn("Failed to fetch TMDB vote average for tvShow {}", tvShowIdStr, e);
+      }
+    }
+    tvShowService.updateFromExternal(tvShowIdStr, data.originalTitle(), data.firstAirDate(), data.lastAirDate(), voteAverage);
 
     List<Integer> genreIds = List.of();
     if (tvShow.getTmdbId() != null) {

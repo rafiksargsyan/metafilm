@@ -156,6 +156,15 @@ public class TmdbTVShowClientImpl implements TmdbTVShowClient {
   }
 
   @Override
+  public Double fetchVoteAverage(Long tmdbId) {
+    TVShowResponse response = restClient.get()
+        .uri("/tv/{id}?api_key={key}", tmdbId, apiKey)
+        .retrieve()
+        .body(TVShowResponse.class);
+    return response != null ? response.voteAverage() : null;
+  }
+
+  @Override
   public Map<Locale, TmdbVideoData> fetchTVShowVideos(Long tmdbId, Set<Locale> locales) {
     List<String> langs = locales.stream().map(Locale::getLang).distinct().collect(Collectors.toList());
     List<VideoEntry> allVideos = new ArrayList<>();
