@@ -1,5 +1,6 @@
 package com.rsargsyan.metafilm.main_ctx.adapters.driving.controllers;
 
+import com.rsargsyan.metafilm.main_ctx.core.exception.ApiKeyNotDisabledException;
 import com.rsargsyan.metafilm.main_ctx.core.exception.AuthorizationException;
 import com.rsargsyan.metafilm.main_ctx.core.exception.DomainException;
 import com.rsargsyan.metafilm.main_ctx.core.exception.ResourceNotFoundException;
@@ -23,6 +24,12 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleNotFoundException(ResourceNotFoundException e) {
     return new ResponseEntity<>(new ErrorResponse(e.getClass().getSimpleName(), e.getMessage()),
         HttpStatus.NOT_FOUND);
+  }
+
+  @ExceptionHandler(ApiKeyNotDisabledException.class)
+  public ResponseEntity<ErrorResponse> handleApiKeyNotDisabledException(ApiKeyNotDisabledException e) {
+    return new ResponseEntity<>(new ErrorResponse(e.getClass().getSimpleName(), e.getMessage()),
+        HttpStatus.CONFLICT);
   }
 
   @ExceptionHandler(SyncInProgressException.class)

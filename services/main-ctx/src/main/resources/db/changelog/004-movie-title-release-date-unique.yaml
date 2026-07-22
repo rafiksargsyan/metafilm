@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-movie-title-release-date-unique
+      author: rsargsyan
+      changes:
+        - sql:
+            sql: ALTER TABLE movie ADD CONSTRAINT uq_movie_title_release_date UNIQUE (original_title, release_date);

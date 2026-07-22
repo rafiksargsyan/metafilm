@@ -155,6 +155,22 @@ export interface EpisodeDetail extends Episode {
   translations: EpisodeTranslation[];
 }
 
+export interface AdminApiKey {
+  id: string;
+  description: string | null;
+  disabled: boolean;
+  lastAccessTime: string | null;
+  createdAt: string;
+  key: string | null;
+}
+
+export interface AdminProfile {
+  id: string;
+  externalId: string;
+  fullName: string;
+  createdAt: string;
+}
+
 export const LOCALES: { value: string; label: string }[] = [
   { value: 'EN', label: 'English' },
   { value: 'EN_US', label: 'English (US)' },

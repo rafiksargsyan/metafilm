@@ -21,6 +21,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import MovieIcon from '@mui/icons-material/Movie';
 import TvIcon from '@mui/icons-material/Tv';
 import LabelIcon from '@mui/icons-material/Label';
+import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { label: 'Movies', icon: <MovieIcon />, path: '/movies' },
   { label: 'TV Shows', icon: <TvIcon />, path: '/tvshows' },
   { label: 'Tags', icon: <LabelIcon />, path: '/tags' },
+  { label: 'API Keys', icon: <VpnKeyOutlinedIcon />, path: '/api-keys' },
 ];
 
 export function Layout() {
