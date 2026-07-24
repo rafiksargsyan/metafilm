@@ -237,18 +237,14 @@ public class TVShowSyncService {
     boolean covered = data.translations().stream()
         .anyMatch(t -> t.locale().equals(tvShowLocale) && t.title() != null && !t.title().isBlank());
     if (!covered) {
-      try {
-        syncTVShowTranslation(tvShowIdStr, new ExternalTranslationData(
-            tvShowLocale,
-            data.originalTitle(),
-            data.originalOverview(),
-            data.originalTagline(),
-            data.originalPosterPath(),
-            data.originalBackdropPath()
-        ), externalSource);
-      } catch (Exception e) {
-        log.error("Failed to sync original-locale translation {} for tvShow {}", tvShowLocale, tvShowIdStr, e);
-      }
+      syncTVShowTranslation(tvShowIdStr, new ExternalTranslationData(
+          tvShowLocale,
+          data.originalTitle(),
+          data.originalOverview(),
+          data.originalTagline(),
+          data.originalPosterPath(),
+          data.originalBackdropPath()
+      ), externalSource);
     }
 
     for (ExternalSeasonData season : data.seasons()) {

@@ -169,18 +169,14 @@ public class MovieSyncService {
     boolean covered = data.translations().stream()
         .anyMatch(t -> t.locale().equals(movieLocale) && t.title() != null && !t.title().isBlank());
     if (!covered) {
-      try {
-        syncTranslation(movie, new TmdbTranslationData(
-            movieLocale,
-            data.originalTitle(),
-            data.originalOverview(),
-            data.originalTagline(),
-            data.originalPosterPath(),
-            data.originalBackdropPath()
-        ));
-      } catch (Exception e) {
-        log.error("Failed to sync original-locale translation {} for movie {}", movieLocale, movieId, e);
-      }
+      syncTranslation(movie, new TmdbTranslationData(
+          movieLocale,
+          data.originalTitle(),
+          data.originalOverview(),
+          data.originalTagline(),
+          data.originalPosterPath(),
+          data.originalBackdropPath()
+      ));
     }
   }
 
