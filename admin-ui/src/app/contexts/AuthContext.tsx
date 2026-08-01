@@ -13,6 +13,7 @@ import {
   getEmailForSignIn,
   clearEmailForSignIn,
 } from '../../utils/emailStorage';
+import { signup } from '../../api/adminApiKeys';
 import type { AuthContextValue } from '../../types/auth.types';
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -30,8 +31,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
+      if (firebaseUser) {
+        signup(firebaseUser)
+          .catch(console.error)
+          .finally(() => {
+            setUser(firebaseUser);
+            setLoading(false);
+          });
+      } else {
+        setUser(firebaseUser);
+        setLoading(false);
+      }
     });
 
     if (isSignInWithEmailLink(auth, window.location.href)) {
