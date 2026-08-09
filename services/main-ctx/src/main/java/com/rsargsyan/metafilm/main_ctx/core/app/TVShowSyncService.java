@@ -260,7 +260,7 @@ public class TVShowSyncService {
   private void syncTVShowTranslation(String tvShowIdStr, ExternalTranslationData t,
                                       ExternalSource externalSource) {
     tvShowService.upsertTranslation(tvShowIdStr, t.locale(), t.title(), t.overview(), t.tagline());
-    if (t.posterPath() != null) {
+    if (t.posterPath() != null && !tvShowService.isImageUpToDate(tvShowIdStr, t.locale(), ImageType.POSTER, t.posterPath())) {
       UploadResult r = uploadImage(
           "tvshows/%s/%s/poster".formatted(tvShowIdStr, t.locale().name().toLowerCase()),
           t.posterPath());
@@ -268,7 +268,7 @@ public class TVShowSyncService {
         tvShowService.upsertTranslationImage(tvShowIdStr, t.locale(), ImageType.POSTER, r.s3Key(), externalSource, t.posterPath(), r.blurhash());
       }
     }
-    if (t.backdropPath() != null) {
+    if (t.backdropPath() != null && !tvShowService.isImageUpToDate(tvShowIdStr, t.locale(), ImageType.BACKDROP, t.backdropPath())) {
       UploadResult r = uploadImage(
           "tvshows/%s/%s/backdrop".formatted(tvShowIdStr, t.locale().name().toLowerCase()),
           t.backdropPath());
@@ -286,7 +286,7 @@ public class TVShowSyncService {
     for (ExternalTranslationData t : season.translations()) {
       try {
         seasonService.upsertTranslation(seasonIdStr, t.locale(), t.title(), t.overview());
-        if (t.posterPath() != null) {
+        if (t.posterPath() != null && !seasonService.isImageUpToDate(seasonIdStr, t.locale(), ImageType.POSTER, t.posterPath())) {
           UploadResult r = uploadImage(
               "tvshows/%s/seasons/%d/%s/poster".formatted(tvShowIdStr, season.seasonNumber(), t.locale().name().toLowerCase()),
               t.posterPath());
@@ -335,7 +335,11 @@ public class TVShowSyncService {
       }
     }
 
-    if (episode.stillPath() != null) {
+    // The same still applies to every translation, so only skip the download if none of them
+    // are missing it - a translation that hasn't been assigned this still yet (e.g. a newly
+    // added locale) still needs it even if other locales are already up to date.
+    if (episode.stillPath() != null && !episode.translations().stream()
+        .allMatch(t -> episodeService.isImageUpToDate(episodeIdStr, t.locale(), ImageType.STILL, episode.stillPath()))) {
       UploadResult r = uploadImage(
           "tvshows/%s/seasons/%d/episodes/%d/still".formatted(tvShowIdStr, seasonNumber, episode.episodeNumber()),
           episode.stillPath());

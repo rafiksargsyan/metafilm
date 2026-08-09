@@ -160,4 +160,14 @@ public class SeasonService {
     translation.upsertImage(imageType, path, externalSource, externalPath, blurhash);
     seasonTranslationRepository.save(translation);
   }
+
+  // See TVShowService.isImageUpToDate - same reasoning, lets sync skip the download+blurhash
+  // work when the source image hasn't changed since last sync.
+  public boolean isImageUpToDate(String seasonIdStr, Locale locale, ImageType imageType, String externalPath) {
+    Long seasonId = Util.validateTSID(seasonIdStr);
+    return seasonTranslationRepository.findBySeasonIdAndLocale(seasonId, locale)
+        .map(t -> t.getImages().stream()
+            .anyMatch(img -> img.getType() == imageType && externalPath.equals(img.getExternalPath())))
+        .orElse(false);
+  }
 }

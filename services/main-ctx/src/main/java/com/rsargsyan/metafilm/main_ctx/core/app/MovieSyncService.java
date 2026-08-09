@@ -198,6 +198,10 @@ public class MovieSyncService {
 
   private MovieTranslation syncImage(Movie movie, MovieTranslation translation,
                                      ImageType imageType, String tmdbPath) {
+    boolean upToDate = translation.getImages().stream()
+        .anyMatch(img -> img.getType() == imageType && tmdbPath.equals(img.getExternalPath()));
+    if (upToDate) return translation;
+
     byte[] imageBytes;
     try {
       imageBytes = imageDownloadClient.get()

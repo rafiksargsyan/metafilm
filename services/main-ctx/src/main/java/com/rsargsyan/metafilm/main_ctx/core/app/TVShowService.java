@@ -175,4 +175,14 @@ public class TVShowService {
     translation.upsertImage(imageType, path, externalSource, externalPath, blurhash);
     tvShowTranslationRepository.save(translation);
   }
+
+  // Lets sync callers skip the download+blurhash work entirely when the source image hasn't
+  // actually changed since last sync, rather than redoing it unconditionally on every run.
+  public boolean isImageUpToDate(String tvShowIdStr, Locale locale, ImageType imageType, String externalPath) {
+    Long tvShowId = Util.validateTSID(tvShowIdStr);
+    return tvShowTranslationRepository.findByTvShowIdAndLocale(tvShowId, locale)
+        .map(t -> t.getImages().stream()
+            .anyMatch(img -> img.getType() == imageType && externalPath.equals(img.getExternalPath())))
+        .orElse(false);
+  }
 }
